@@ -1,0 +1,135 @@
+name: Publish the demo images
+
+# Builds the three demo images and pushes them to GitHub's registry, then
+# signs two of them with this workflow's own identity (cosign keyless: a
+# short-lived certificate from Sigstore's Fulcio for this workflow on main,
+# recorded in Rekor; no key exists anywhere) and attaches three signed
+# attestations to each: a CycloneDX SBOM, SLSA provenance, and the result of
+# a vulnerability scan. The third image is pushed and never signed.
+#
+# The scan is re-run and re-attested every day, so the attestation the
+# cluster reads is never older than a day.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "images/**"
+      - ".github/workflows/publish.yml"
+  schedule:
+    - cron: "11 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build, sign and attest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # Push to ghcr.io/<this repository>/...
+      packages: write
+      # The OIDC token cosign exchanges for a signing certificate.
+      id-token: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      SYFT_IMAGE: docker.io/anchore/syft:v1.54.1@sha256:3eb5379ba7b409c3f4069b686110527af0c47df993fa5c10d13e7cf34f49b1aa
+      TRIVY_IMAGE: docker.io/aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GitHub's registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.1.3
+
+      - name: Build and push the three images
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          for name in app unsigned vulnerable; do
+            # One manifest list per image, no BuildKit attestations of its
+            # own: the attestations this repository vouches for are the ones
+            # signed below.
+            docker buildx build --push --platform linux/amd64,linux/arm64 \
+              --provenance=false --sbom=false \
+              --metadata-file "$RUNNER_TEMP/out/$name.json" \
+              -t "$IMAGE/$name:latest" "images/$name"
+            digest="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["containerimage.digest"])' "$RUNNER_TEMP/out/$name.json")"
+            echo "$name $IMAGE/$name@$digest" | tee -a "$RUNNER_TEMP/out/digests"
+          done
+
+      - name: Sign app and vulnerable with this workflow's identity
+        run: |
+          for name in app vulnerable; do
+            ref="$(awk -v n="$name" '$1 == n {print $2}' "$RUNNER_TEMP/out/digests")"
+            cosign sign --yes "$ref"
+          done
+
+      - name: Attest SBOM, provenance and scan
+        run: |
+          for name in app vulnerable; do
+            ref="$(awk -v n="$name" '$1 == n {print $2}' "$RUNNER_TEMP/out/digests")"
+            out="$RUNNER_TEMP/out/$name"
+            mkdir -p "$out"
+
+            # What is in the image, as CycloneDX.
+            docker run --rm "$SYFT_IMAGE" "registry:$ref" -o cyclonedx-json > "$out/sbom.json"
+            cosign attest --yes --type cyclonedx --predicate "$out/sbom.json" "$ref"
+
+            # Where it came from: this repository at this commit, built by
+            # this workflow run. SLSA v1 provenance, generated and signed in
+            # the build job itself (Build L2; an isolated generator would be L3).
+            python3 - "$out/provenance.json" <<'PY'
+          import json, os, sys
+          repo, sha, ref = os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_SHA"], os.environ["GITHUB_REF"]
+          server, run, attempt = os.environ["GITHUB_SERVER_URL"], os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"]
+          json.dump({
+              "buildDefinition": {
+                  "buildType": f"{server}/{repo}/publish@v1",
+                  "externalParameters": {"workflow": ".github/workflows/publish.yml", "ref": ref},
+                  "resolvedDependencies": [{"uri": f"git+{server}/{repo}@{ref}", "digest": {"gitCommit": sha}}],
+              },
+              "runDetails": {
+                  "builder": {"id": f"{server}/{repo}/.github/workflows/publish.yml@{ref}"},
+                  "metadata": {"invocationId": f"{server}/{repo}/actions/runs/{run}/attempts/{attempt}"},
+              },
+          }, open(sys.argv[1], "w"))
+          PY
+            cosign attest --yes --type slsaprovenance1 --predicate "$out/provenance.json" "$ref"
+
+            # What a scanner found in it today.
+            docker run --rm "$TRIVY_IMAGE" image --quiet --format cosign-vuln "$ref" > "$out/vuln.json"
+            cosign attest --yes --type vuln --predicate "$out/vuln.json" "$ref"
+          done
+
+      - name: What was published
+        run: |
+          {
+            echo "### Published"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/out/digests"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
