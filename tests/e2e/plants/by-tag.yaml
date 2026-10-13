@@ -1,0 +1,25 @@
+# expect: images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest
+# The signed image, by tag: what was verified would not be what runs.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: by-tag
+  namespace: workloads
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: app
+      image: ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/app:latest
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]

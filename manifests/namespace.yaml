@@ -1,0 +1,10 @@
+# Where workloads run that must pass image verification. The label is what
+# both policies bind to.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: workloads
+  labels:
+    supply-chain.heyvaldemar.com/verified: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

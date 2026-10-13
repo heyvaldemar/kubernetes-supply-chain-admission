@@ -1,0 +1,25 @@
+# expect: a signed scan that read its operating system's packages and found nothing critical
+# Signed and attested, and its own scan found CVE-2021-36159.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vulnerable
+  namespace: workloads
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: app
+      image: IMAGE_VULNERABLE
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]

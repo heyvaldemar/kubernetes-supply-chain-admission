@@ -21,7 +21,8 @@ A reference, not a hosted service. A vulnerability here is most likely an image 
 ## Supply chain
 
 - Container images are pinned by digest, and CI fails on one that is not.
+- The demo images are signed keyless by the publish workflow on `main`, with signed provenance, an SBOM and a vulnerability scan attached; `cosign verify` and `cosign verify-attestation` check them from anywhere (README).
 
 ## Credentials
 
-None. The demo agent uses no model and no API key, and nothing in this repository or its CI stores a credential.
+None stored. The publish workflow signs with a short-lived certificate issued to its own GitHub identity, so no signing key exists, and it pushes with the workflow's own `GITHUB_TOKEN`.

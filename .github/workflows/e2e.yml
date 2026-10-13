@@ -1,0 +1,65 @@
+name: Supply chain e2e
+
+# A fresh kind cluster with Kyverno, the policies applied, and
+# tests/e2e/run.sh against the images the publish workflow pushed last: the
+# signed image runs; the unsigned one, the one with a critical vulnerability,
+# a reference by tag and an image signed by someone else are refused; and
+# what still holds when Kyverno is down.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "43 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Fresh cluster, every check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned tools
+        run: ./scripts/install-tools.sh >> "$GITHUB_PATH"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.1.3
+
+      - name: Verify the published images without a cluster
+        run: ./scripts/verify-published.sh
+
+      - name: Create the kind cluster
+        run: kind create cluster --config kind/cluster.yaml --wait 120s
+
+      - name: Install Kyverno
+        run: ./scripts/install-kyverno.sh
+
+      - name: Apply the namespace and the policies
+        run: |
+          kubectl apply -f manifests/namespace.yaml -f policies/
+          kubectl wait --for=jsonpath='{.status.conditionStatus.ready}'=true imagevalidatingpolicy/verify-images --timeout=120s
+
+      - name: Run the checks
+        run: ./tests/e2e/run.sh
+
+      - name: What the cluster looked like
+        if: failure()
+        run: |
+          kubectl get pods -A -o wide
+          kubectl get events -A --sort-by=.lastTimestamp | tail -40
+          kubectl -n kyverno logs deployment/kyverno-admission-controller --tail=80 || true

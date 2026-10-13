@@ -1,0 +1,25 @@
+# expect: admitted
+# The control: signed by the publish workflow, provenance, SBOM, a clean scan. The digest is filled in from the registry at run time.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: signed
+  namespace: workloads
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: app
+      image: IMAGE_APP
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]

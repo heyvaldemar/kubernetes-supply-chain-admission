@@ -1,0 +1,38 @@
+# The part of the rule the API server can enforce on its own: images come
+# from this repository's registry path, by digest. A ValidatingAdmissionPolicy
+# is evaluated in-process, so it holds while Kyverno is down, when the
+# signature checks above do not (Kyverno deletes its webhooks when its
+# admission controller is scaled to zero; docs/threat-model.md).
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: registry-allowlist
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  variables:
+    - name: images
+      expression: >-
+        object.spec.containers.map(c, c.image) +
+        (has(object.spec.initContainers) ? object.spec.initContainers.map(c, c.image) : [])
+  validations:
+    - expression: >-
+        variables.images.all(i, i.startsWith('ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/') && i.contains('@sha256:'))
+      message: images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: registry-allowlist
+spec:
+  policyName: registry-allowlist
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        supply-chain.heyvaldemar.com/verified: "true"

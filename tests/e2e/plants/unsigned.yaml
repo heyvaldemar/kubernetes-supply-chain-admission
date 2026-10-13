@@ -1,0 +1,25 @@
+# expect: every image is signed by this repository's publish workflow on main
+# Pushed by the same workflow, never signed.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unsigned
+  namespace: workloads
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: app
+      image: IMAGE_UNSIGNED
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]

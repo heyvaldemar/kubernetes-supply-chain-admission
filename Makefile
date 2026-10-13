@@ -1,0 +1,25 @@
+# Image verification at admission, on kind. The images come from this
+# repository's publish workflow; nothing here builds or signs locally.
+BIN := $(CURDIR)/.cache/bin
+export PATH := $(BIN):$(PATH)
+
+.PHONY: tools up test check down
+
+tools:
+	@./scripts/install-tools.sh >/dev/null
+
+up: tools
+	kind create cluster --config kind/cluster.yaml --wait 120s
+	./scripts/install-kyverno.sh
+	kubectl apply -f manifests/namespace.yaml -f policies/
+	kubectl wait --for=jsonpath='{.status.conditionStatus.ready}'=true imagevalidatingpolicy/verify-images --timeout=120s
+
+test: tools
+	./tests/e2e/run.sh
+
+check: tools
+	./scripts/validate.sh
+	python3 tests/static/plant_violations.py
+
+down: tools
+	kind delete cluster --name supply-chain

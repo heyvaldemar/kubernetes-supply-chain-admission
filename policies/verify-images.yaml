@@ -1,0 +1,82 @@
+# What an image needs before it runs in a verified namespace, checked by
+# Kyverno at admission against the registry and Sigstore's transparency log:
+#
+#   - a signature by this repository's publish workflow on main
+#     (cosign keyless: the identity is the workflow, not a key anyone holds)
+#   - signed SLSA provenance that says it was built from this repository
+#   - a signed CycloneDX SBOM
+#   - a signed vulnerability scan that read an operating system's packages
+#     and found nothing critical
+#   - a reference by digest, so what was verified is what runs
+#
+# Every image in the pod is matched (glob "*"): an image from anywhere else,
+# signed by anyone else, is refused for the same reason an unsigned one is.
+#
+# extractPayload() returns the whole in-toto statement in Kyverno 1.19.1, so
+# the attestation's content is under .predicate (the documentation's example
+# reads .bomFormat at the top level; that path finds nothing).
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+metadata:
+  name: verify-images
+spec:
+  validationActions: [Deny]
+  failurePolicy: Fail
+  webhookConfiguration:
+    timeoutSeconds: 25
+  evaluation:
+    background:
+      enabled: false
+  matchConstraints:
+    namespaceSelector:
+      matchLabels:
+        supply-chain.heyvaldemar.com/verified: "true"
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  matchImageReferences:
+    - glob: "*"
+  validationConfigurations:
+    verifyDigest: true
+    mutateDigest: false
+    required: true
+  attestors:
+    - name: publisher
+      cosign:
+        keyless:
+          identities:
+            - subject: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/.github/workflows/publish.yml@refs/heads/main
+              issuer: https://token.actions.githubusercontent.com
+        ctlog:
+          url: https://rekor.sigstore.dev
+  attestations:
+    - name: provenance
+      intoto:
+        type: https://slsa.dev/provenance/v1
+    - name: sbom
+      intoto:
+        type: https://cyclonedx.org/bom
+    - name: scan
+      intoto:
+        type: https://cosign.sigstore.dev/attestation/vuln/v1
+  validations:
+    - expression: >-
+        images.containers.map(image, verifyImageSignatures(image, [attestors.publisher])).all(n, n > 0)
+      message: every image is signed by this repository's publish workflow on main
+    - expression: >-
+        images.containers.map(image, verifyAttestationSignatures(image, attestations.provenance, [attestors.publisher])).all(n, n > 0) &&
+        images.containers.map(image, extractPayload(image, attestations.provenance).predicate.buildDefinition.resolvedDependencies
+          .exists(d, d.uri.startsWith('git+https://github.com/heyvaldemar/kubernetes-supply-chain-admission@'))).all(ok, ok)
+      message: every image carries signed provenance that says it was built from this repository
+    - expression: >-
+        images.containers.map(image, verifyAttestationSignatures(image, attestations.sbom, [attestors.publisher])).all(n, n > 0) &&
+        images.containers.map(image, extractPayload(image, attestations.sbom).predicate.bomFormat == 'CycloneDX').all(ok, ok)
+      message: every image carries a signed CycloneDX SBOM
+    - expression: >-
+        images.containers.map(image, verifyAttestationSignatures(image, attestations.scan, [attestors.publisher])).all(n, n > 0) &&
+        images.containers.map(image, extractPayload(image, attestations.scan).predicate.scanner.result).all(r,
+          has(r.Results) && r.Results.exists(t, t.Class == 'os-pkgs') &&
+          r.Results.all(t, !has(t.Vulnerabilities) || t.Vulnerabilities.all(v, v.Severity != 'CRITICAL')))
+      message: every image carries a signed scan that read its operating system's packages and found nothing critical
