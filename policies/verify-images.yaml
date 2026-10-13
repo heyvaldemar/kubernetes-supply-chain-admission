@@ -12,9 +12,11 @@
 # Every image in the pod is matched (glob "*"): an image from anywhere else,
 # signed by anyone else, is refused for the same reason an unsigned one is.
 #
-# extractPayload() returns the whole in-toto statement in Kyverno 1.19.1, so
-# the attestation's content is under .predicate (the documentation's example
-# reads .bomFormat at the top level; that path finds nothing).
+# For a cosign in-toto attestation, extractPayload() returns the whole in-toto
+# statement in Kyverno 1.19.1, so the attestation's content is under
+# .predicate. The documentation's example reads .bomFormat at the top level,
+# which is right for the Notary referrer it declares, whose payload is the SBOM
+# itself; written that way here, the path finds nothing.
 apiVersion: policies.kyverno.io/v1
 kind: ImageValidatingPolicy
 metadata:

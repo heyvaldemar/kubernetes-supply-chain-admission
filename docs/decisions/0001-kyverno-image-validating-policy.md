@@ -15,7 +15,7 @@ Kyverno 1.19's ImageValidatingPolicy (`policies/verify-images.yaml`): cosign key
 
 - One policy carries the signer, the provenance source, the SBOM and the scan rule, with a message per rule that says which one failed.
 - It is a webhook. When Kyverno is down, it does not run; the native registry allowlist (ADR 4) is the floor.
-- `extractPayload()` returns the in-toto statement, so payload fields are under `.predicate`; the threat model records how that surfaced.
+- For cosign in-toto attestations, `extractPayload()` returns the in-toto statement, so payload fields are under `.predicate`; a Notary referrer returns its content directly. The threat model records how that surfaced.
 
 ## Alternatives
 
