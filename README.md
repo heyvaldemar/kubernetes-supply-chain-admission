@@ -111,6 +111,10 @@ docs/                 the threat model and the decisions
 
 This repository is the supply chain half of [aws-eks-reference-platform](https://github.com/heyvaldemar/aws-eks-reference-platform), whose threat model lists unsigned images as its largest open risk. The [agent sandbox](https://github.com/heyvaldemar/kubernetes-ai-agent-sandbox) is the other piece next to it.
 
+## Questions, bugs and changes
+
+Open an [issue](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/issues) for a bug, a question or an idea. Security reports go privately, as [SECURITY.md](SECURITY.md) describes. Changes are welcome as pull requests: CI runs the same checks on them as on main, and a change ships with the check that proves it.
+
 ## How this is built
 
 One maintainer and an AI agent. The agent writes most of the code; the decisions are mine, and so is the verification. Nothing merges on the agent's report that it works: it merges on the checks above, and each of them has been shown the failure it exists to catch. The empty scan and the `.predicate` path in the threat model came from checks that failed during the build.
