@@ -85,7 +85,7 @@ make down
 
 ## Cost
 
-Nothing in a cloud. The cluster is kind on one machine; the images live in GitHub's registry, free for a public repository, and Sigstore's public instance is free. CI is two GitHub-hosted runs a day: the publish workflow (build, sign, attest, scan) and a fresh kind cluster with every check, about five minutes each. On EKS the cost is Kyverno's admission controller at three replicas. And latency: each new pod waits on the registry and the transparency log.
+Nothing in a cloud. The cluster is kind on one machine; the images live in GitHub's registry, free for a public repository, and Sigstore's public instance is free. CI is two GitHub-hosted runs a day: the publish workflow (build, sign, attest, scan) and a fresh kind cluster with every check, two to three minutes each. On EKS the cost is Kyverno's admission controller at three replicas. And latency: each new pod waits on the registry and the transparency log.
 
 ## What it does not do
 
