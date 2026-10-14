@@ -15,7 +15,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
-- `repro/attestation-order`: a reproduction, started by hand, of Kyverno's `ImageValidatingPolicy` returning whichever of several attestations of one type the referrers index lists last ([kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000)). One image, the same two signed attestations, two index orders, and the answer the API server gives for each.
+- `repro/attestation-order`: a reproduction, started by hand, of Kyverno's `ImageValidatingPolicy` returning whichever of several attestations of one type the referrers index lists last ([kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000)). One image, the same two signed attestations, two index orders, and the answer the API server gives for each: admitted with the newer listed last, refused with it listed first, in both runs so far. Reported as [kyverno/kyverno#18023](https://github.com/kyverno/kyverno/issues/18023).
 - CodeQL (security-extended) on the Python and the workflows, on every push and weekly.
 - The OpenSSF Best Practices badge, passing, and a README section on where a bug, a question or a change goes.
 
