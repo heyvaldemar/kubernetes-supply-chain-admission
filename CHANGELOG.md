@@ -10,7 +10,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
-- The attestor has no `ctlog` block. The transparency log is still required, but Kyverno checks each bundle's inclusion proof offline against Rekor's key from Sigstore's TUF root instead of calling Rekor at every admission. One verified admission went from 14 to 16 seconds, with two timeouts at 25, to 4 to 10 seconds across three e2e runs, and Rekor is off the admission path.
+- The attestor has no `ctlog` block. The transparency log is still required, but Kyverno checks each bundle's inclusion proof offline against Rekor's key from Sigstore's TUF root instead of calling Rekor at every admission. Rekor is off the admission path. Admission is not measurably faster: 4 to 17 seconds across eight e2e runs without the online client, inside the 7 to 26 seconds seen with it.
 
 ### Added
 
