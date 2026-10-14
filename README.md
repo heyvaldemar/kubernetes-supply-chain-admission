@@ -66,7 +66,7 @@ flowchart LR
   api -->|in-process| vap[registry allowlist: this path, by digest]
   api -->|webhook| kyv[Kyverno: signer, provenance, SBOM, scan]
   kyv -->|reads| reg
-  kyv -->|verifies| rekor
+  kyv -.->|inclusion proof checked offline, key from the Sigstore TUF root| rekor
 ```
 
 - **Publish** (`.github/workflows/publish.yml`): three demo images, built for amd64 and arm64. `app` and `vulnerable` are signed with the workflow's own identity, and each gets three signed attestations: SLSA v1 provenance written in the job, a CycloneDX SBOM from Syft, and a Trivy scan. `unsigned` is pushed and never signed. The scan is re-run daily.
@@ -91,7 +91,7 @@ Nothing in a cloud. The cluster is kind on one machine; the images live in GitHu
 
 ## What it does not do
 
-The [threat model](docs/threat-model.md) lists every threat with its control and check, four findings from the build, and what is not covered: with Kyverno down, unsigned images from the allowed registry path are admitted; a scan is only as fresh as the last publish run; the provenance is Build L2, written by the job that builds; a running pod is not re-checked when its image's scan turns critical; the registry and Rekor are on the admission path.
+The [threat model](docs/threat-model.md) lists every threat with its control and check, five findings from the build, and what is not covered: with Kyverno down, unsigned images from the allowed registry path are admitted; a scan is only as fresh as the last publish run; the provenance is Build L2, written by the job that builds; a running pod is not re-checked when its image's scan turns critical; the registry is on the admission path.
 
 ## Repository
 
