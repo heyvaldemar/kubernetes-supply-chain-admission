@@ -51,8 +51,11 @@ spec:
           identities:
             - subject: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/.github/workflows/publish.yml@refs/heads/main
               issuer: https://token.actions.githubusercontent.com
-        ctlog:
-          url: https://rekor.sigstore.dev
+        # No ctlog block. The transparency log is still required: with none,
+        # Kyverno takes Rekor's public key from Sigstore's TUF root and checks
+        # the inclusion proof each bundle carries, offline. A ctlog.url makes
+        # it build an online Rekor client instead, and puts Rekor on the
+        # admission path.
   attestations:
     - name: provenance
       intoto:
