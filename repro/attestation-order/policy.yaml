@@ -1,0 +1,44 @@
+# The reproduction's policy. The image carries two attestations of one
+# predicate type, "first" and then "second". The rule verifies them and admits
+# the pod only when extractPayload() returns the one that says "second", the
+# newer. run.sh replaces REPOSITORY with the repository that signed them, and
+# REPOSITORY_LC with its lowercase form, which is what a registry path takes.
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+metadata:
+  name: attestation-order
+spec:
+  validationActions: [Deny]
+  failurePolicy: Fail
+  webhookConfiguration:
+    timeoutSeconds: 30
+  evaluation:
+    background:
+      enabled: false
+  matchConstraints:
+    namespaceSelector:
+      matchLabels:
+        attestation-order: repro
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE]
+        resources: [pods]
+  matchImageReferences:
+    - glob: "ghcr.io/REPOSITORY_LC/attestation-order*"
+  attestors:
+    - name: workflow
+      cosign:
+        keyless:
+          identities:
+            - subject: https://github.com/REPOSITORY/.github/workflows/attestation-order-repro.yml@refs/heads/main
+              issuer: https://token.actions.githubusercontent.com
+  attestations:
+    - name: order
+      intoto:
+        type: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/repro/attestation-order/v1
+  validations:
+    - expression: >-
+        images.containers.map(image, verifyAttestationSignatures(image, attestations.order, [attestors.workflow])).all(n, n > 0) &&
+        images.containers.map(image, extractPayload(image, attestations.order).predicate.which == 'second').all(ok, ok)
+      message: extractPayload() returned the older attestation, the one that says "first"
