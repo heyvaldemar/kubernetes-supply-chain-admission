@@ -178,7 +178,8 @@ def selftest():
     b.n = 0
     vuln, sbom, sig = "https://cosign.sigstore.dev/attestation/vuln/v1", "https://cyclonedx.org/bom", "https://sigstore.dev/cosign/sign/v1"
     other = ({"artifactType": "application/vnd.example.notary+json", "digest": "sha256:other"}, {})
-    # GHCR's order, as seen on 2026-10-13: the newer scan before the older one.
+    # Out of creation order. On GHCR on 2026-10-13 it was the SBOMs and the
+    # signatures that were reversed; the scans here are reversed the same way.
     entries = [b(sbom, "2026-10-13T04:35:18Z"), b(vuln, "2026-10-13T04:35:44Z"), other,
                b(vuln, "2026-10-13T04:31:30Z"), b(sig, "2026-10-13T04:30:26Z"), b(sbom, "2026-10-13T04:31:08Z"),
                b("", "2026-10-13T04:30:00Z", content="message-signature"), b("", "2026-10-13T04:40:00Z", content="message-signature"),
