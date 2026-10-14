@@ -4,7 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-_(no unreleased changes yet)_
+### Added
+
+- CodeQL (security-extended) on the Python and the workflows, on every push and weekly.
+- The OpenSSF Best Practices badge, passing, and a README section on where a bug, a question or a change goes.
+
+### Changed
+
+- The threat model, ADR 1 and the policy's comment no longer call Kyverno's `extractPayload()` example wrong. It reads `.bomFormat` at the top level for a Notary referrer, whose payload is the SBOM itself, and is right for that; a cosign in-toto attestation returns the whole statement, so its content is under `.predicate`. The documentation shows one of the two kinds.
+- The threat model links the two reports made upstream from its findings: [kyverno/website#2201](https://github.com/kyverno/website/pull/2201), a note on the in-toto payload, and [aquasecurity/trivy discussion 11403](https://github.com/aquasecurity/trivy/discussions/11403), on the exit status of a scan that found no operating system packages.
 
 ## [1.0.0] - 2026-10-13
 
