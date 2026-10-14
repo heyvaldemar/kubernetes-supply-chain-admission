@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - Attestations no longer pile up on the published images. The images build to the same digest, and every daily publish run added four Sigstore bundles to it; Kyverno verifies each one on every admission, so the refusal of the vulnerable image grew to between 7 and 26 seconds at eight bundles, against a 25-second webhook timeout, and two of ten e2e runs failed on the timeout. With two scans attached, which one the policy read depended on the order of GHCR's referrers index ([kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000) reports the same for `verifyImages`). The publish run now keeps the newest bundle of each kind (`scripts/referrers.py prune`), Verify runs the selection rule on planted data, and the e2e run fails if a published image carries two bundles of a kind.
 
+### Changed
+
+- The attestor has no `ctlog` block. The transparency log is still required, but Kyverno checks each bundle's inclusion proof offline against Rekor's key from Sigstore's TUF root instead of calling Rekor at every admission. One verified admission went from 14 to 16 seconds, with two timeouts at 25, to 4 to 10 seconds across three e2e runs, and Rekor is off the admission path.
+
 ### Added
 
 - CodeQL (security-extended) on the Python and the workflows, on every push and weekly.

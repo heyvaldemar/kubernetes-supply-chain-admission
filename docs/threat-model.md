@@ -20,7 +20,7 @@ The cluster's workloads, from code nobody meant to run there. A digest pins byte
 | A verified image swapped for another under the same tag | references by digest only, enforced twice: by the image policy and by a native ValidatingAdmissionPolicy | the signed image referenced by tag refused |
 | A verification that cannot run is read as a pass | `failurePolicy: Fail` | the static check fails on `Ignore` (plant) |
 
-## Four findings from the build
+## Five findings from the build
 
 **A scan that sees nothing is not a clean scan.** The first demo image was built on busybox. Trivy does not recognise busybox as a distribution and reported no results at all, which a policy that only counted critical findings would have read as zero. The image is now built on Alpine, and the policy requires a scan result that contains an operating system's packages before it looks at severities. Trivy exits 0 without a warning in that case, so a `--exit-code` gate passes an image it could not read; that is raised upstream in [aquasecurity/trivy discussion 11403](https://github.com/aquasecurity/trivy/discussions/11403).
 
@@ -30,6 +30,8 @@ The cluster's workloads, from code nobody meant to run there. A digest pins byte
 
 **Attestations pile up on a reproducible build.** The images build to the same digest every day, and every daily publish run signed and attested that digest again, so each run added four Sigstore bundles to it. Kyverno 1.19.1 verifies every bundle on the image, once for each attestation the policy declares, on every admission: with eight bundles on the vulnerable image the refusal took between 7 and 26 seconds against a 25-second webhook timeout, and two of ten e2e runs failed on the timeout instead of the policy. The count was growing by four a day. It also decided which scan the policy read: with two attestations of one type Kyverno keeps the one it verified last, and GHCR's referrers index is not in the order the bundles were made; [Kyverno issue 18000](https://github.com/kyverno/kyverno/issues/18000) reports the same ordering for `verifyImages` rules. The publish run now keeps the newest bundle of each kind and rewrites the index (`scripts/referrers.py`), and the e2e run fails if an image carries two of a kind.
 
+**Rekor does not have to be called at admission.** The attestor first named Rekor's URL in a `ctlog` block, as the documentation's keyless examples do. Kyverno 1.19.1 then builds an online Rekor client for every verification. Without the block the transparency log is still required: Kyverno takes Rekor's public key from Sigstore's TUF root and checks the inclusion proof each bundle carries, offline (`checkOptions` and `getRekor` in `pkg/image/verifiers/ivpol/cosign/opts.go`). Measured in the e2e run, one verified admission took 14 to 16 seconds with the online client, with two timeouts at 25, and 4 to 10 seconds across three runs without it.
+
 ## Residual risks
 
 - **Kyverno down admits unsigned images from the allowed registry path.** Signature verification cannot be expressed in a ValidatingAdmissionPolicy; it needs the webhook. On a real cluster: Kyverno's admission controller at three replicas with a PodDisruptionBudget, an alert on its replicas and on the deletion of its webhook configurations, and push rights to the registry path held by the signing workflow alone, so the allowlist and the signature describe the same set of images. In this demo the same workflow also pushes the unsigned image, on purpose.
@@ -37,7 +39,7 @@ The cluster's workloads, from code nobody meant to run there. A digest pins byte
 - **Provenance is generated in the build job.** The SLSA v1 provenance is written and signed by the same job that builds the image (Build L2). A compromised build step could write false provenance; an isolated generator (L3) would not let it.
 - **The policy trusts the scanner's database on the day of the scan.** A critical vulnerability published after the last scan is invisible until the next one; the daily re-scan bounds that to a day.
 - **Admission time only.** A pod already running is not re-checked when its image's scan turns critical. Kyverno's background scanning or a report on running images would be the next step.
-- **The registry and the transparency log are on the path.** Verification needs GitHub's registry and Sigstore's Rekor reachable at admission; when they are not, `failurePolicy: Fail` refuses new pods.
+- **The registry is on the path.** Verification needs GitHub's registry reachable at admission, and Sigstore's TUF repository when Kyverno first loads its trust root; Rekor is not called. When the registry is not reachable, `failurePolicy: Fail` refuses new pods.
 
 ## How to explain this to a customer
 
