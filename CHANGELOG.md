@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Fixed
 
-- Attestations no longer pile up on the published images. The images build to the same digest, and every daily publish run added four Sigstore bundles to it; Kyverno verifies each one on every admission, so the refusal of the vulnerable image grew to between 7 and 26 seconds at eight bundles, against a 25-second webhook timeout, and two of ten e2e runs failed on the timeout. With two scans attached, which one the policy read depended on the order of GHCR's referrers index ([kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000) reports the same for `verifyImages`). The publish run now keeps the newest bundle of each kind (`scripts/referrers.py prune`), Verify runs the selection rule on planted data, and the e2e run fails if a published image carries two bundles of a kind.
+- Attestations no longer pile up on the published images. The images build to the same digest, and every daily publish run added four Sigstore bundles to it; Kyverno verifies each one on every admission, so the work grew by four bundles a day with no limit. It was found while chasing e2e runs that failed on the webhook's timeout, which it did not cause alone: with four bundles an admission still took 4 to 26 seconds. With two scans attached, which one the policy read depended on the order of GHCR's referrers index ([kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000) reports the same for `verifyImages`). The publish run now keeps the newest bundle of each kind (`scripts/referrers.py prune`), Verify runs the selection rule on planted data, and the e2e run fails if a published image carries two bundles of a kind.
 
 ### Changed
 

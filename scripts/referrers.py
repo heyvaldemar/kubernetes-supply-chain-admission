@@ -10,9 +10,8 @@ referrer. GHCR has no referrers API, so cosign keeps them in an index under
 the fallback tag sha256-<digest> and appends to it on every run. The images
 here build reproducibly, so the daily publish run attaches four more bundles
 to the same digest, and Kyverno 1.19 verifies every bundle on the image, once
-for each attestation the policy declares, on every admission. The check
-slows by four bundles a day until it outlasts the webhook's timeout; at eight
-it already took 7 to 26 seconds against a 25-second limit.
+for each attestation the policy declares, on every admission. The work
+grows by four bundles a day, with no limit.
 
 It also decides which scan the policy reads. With several attestations of
 one type, Kyverno keeps the last it verified (AddVerifiedIntotoPayloads
