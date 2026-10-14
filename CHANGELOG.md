@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Fixed
 
+- `make up` on macOS: its make (3.81) ran a simple recipe without a shell, so the `PATH` the Makefile exports never reached it and `kind` was not found. Every recipe now runs in bash.
 - Attestations no longer pile up on the published images. The images build to the same digest, and every daily publish run added four Sigstore bundles to it; Kyverno verifies each one on every admission, so the work grew by four bundles a day with no limit. It was found while chasing e2e runs that failed on the webhook's timeout, which it did not cause alone: with four bundles an admission still took 4 to 26 seconds. With two scans attached, which one the policy read depended on the order of GHCR's referrers index ([kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000) reports the same for `verifyImages`). The publish run now keeps the newest bundle of each kind (`scripts/referrers.py prune`), Verify runs the selection rule on planted data, and the e2e run fails if a published image carries two bundles of a kind.
 
 ### Changed
@@ -15,6 +16,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- A recording of the e2e run (`docs/demo/e2e.cast`, rendered to `docs/demo/e2e.gif`), in the README.
 - `repro/attestation-order`: a reproduction, started by hand, of Kyverno's `ImageValidatingPolicy` returning whichever of several attestations of one type the referrers index lists last ([kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000)). One image, the same two signed attestations, two index orders, and the answer the API server gives for each: admitted with the newer listed last, refused with it listed first, in both runs so far. Reported as [kyverno/kyverno#18023](https://github.com/kyverno/kyverno/issues/18023).
 - CodeQL (security-extended) on the Python and the workflows, on every push and weekly.
 - The OpenSSF Best Practices badge, passing, and a README section on where a bug, a question or a change goes.

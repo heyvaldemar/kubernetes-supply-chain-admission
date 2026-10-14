@@ -10,6 +10,10 @@ A digest pins bytes. It does not say who built them, from what, or what is insid
 
 It is a reference, not a product, and it does not run in production anywhere. It runs on kind at no cloud cost. The images are not mocks: this repository's own workflow builds and signs them every day.
 
+![The e2e run, as `make test` prints it](docs/demo/e2e.gif)
+
+`make test` on a laptop, recorded with asciinema; waits are cut to two seconds and nothing else is edited. [`docs/demo/e2e.cast`](docs/demo/e2e.cast) replays it in a terminal (`asciinema play`).
+
 ## What is proven, and how
 
 Every line is a check in `tests/e2e/run.sh` on a fresh cluster, or in `scripts/validate.sh`. The refusals are paired with a signed image that must be admitted and run, so no check can pass because the cluster refuses everything.
