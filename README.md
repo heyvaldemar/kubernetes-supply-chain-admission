@@ -5,6 +5,10 @@
 [![Verify](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/workflows/verify.yml/badge.svg)](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/workflows/verify.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/heyvaldemar/kubernetes-supply-chain-admission/badge)](https://scorecard.dev/viewer/?uri=github.com/heyvaldemar/kubernetes-supply-chain-admission)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15464/badge)](https://www.bestpractices.dev/projects/15464)
+[![e2e, last 30 days](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fheyvaldemar%2Fkubernetes-supply-chain-admission%2Fstatus%2Fbadge-days.json)](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/blob/status/status.json)
+[![checks](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fheyvaldemar%2Fkubernetes-supply-chain-admission%2Fstatus%2Fbadge-checks.json)](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/blob/status/status.json)
+
+The second row of badges is not typed by hand: it is the e2e workflow's last 30 days on main, rewritten after every run by [`.github/workflows/status.yml`](.github/workflows/status.yml) into the [`status`](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/tree/status) branch.
 
 A digest pins bytes. It does not say who built them, from what, or what is inside. This repository makes a Kubernetes cluster ask before it runs an image: a signature from one known build, signed provenance that names the source, an SBOM, and a scan from the last day that read the image and found nothing critical. Kyverno checks all four at admission, and a native policy holds the registry line when Kyverno is down.
 

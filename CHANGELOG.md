@@ -16,6 +16,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- Live status: every e2e run uploads its checks and measurements (`E2E_RESULTS`), and `.github/workflows/status.yml` rewrites the `status` branch after each run with the last 30 days on main: green days, the streak, the latest checks (`scripts/status.py`). The README's second row of badges reads it.
 - A recording of the e2e run (`docs/demo/e2e.cast`, rendered to `docs/demo/e2e.gif`), in the README.
 - `repro/attestation-order`: a reproduction, started by hand, of Kyverno's `ImageValidatingPolicy` returning whichever of several attestations of one type the referrers index lists last ([kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000)). One image, the same two signed attestations, two index orders, and the answer the API server gives for each: admitted with the newer listed last, refused with it listed first, in both runs so far. Reported as [kyverno/kyverno#18023](https://github.com/kyverno/kyverno/issues/18023).
 - CodeQL (security-extended) on the Python and the workflows, on every push and weekly.
