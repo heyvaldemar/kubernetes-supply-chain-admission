@@ -39,6 +39,7 @@ The cluster's workloads, from code nobody meant to run there. A digest pins byte
 - **Provenance is generated in the build job.** The SLSA v1 provenance is written and signed by the same job that builds the image (Build L2). A compromised build step could write false provenance; an isolated generator (L3) would not let it.
 - **The policy trusts the scanner's database on the day of the scan.** A critical vulnerability published after the last scan is invisible until the next one; the daily re-scan bounds that to a day.
 - **Admission time only.** A pod already running is not re-checked when its image's scan turns critical. Kyverno's background scanning or a report on running images would be the next step.
+- **Admission is slow, and its time depends on the registry.** One verified admission took 4 to 26 seconds in the e2e runs. The webhook waits 30 seconds, the API server's maximum; past that the request fails closed, and a Deployment's ReplicaSet creates the pod again. The e2e run does the same, once, and records each timeout as a NOTE in its summary. Kyverno's verification cache, or fewer declared attestations, would shorten it; neither is measured here.
 - **The registry is on the path.** Verification needs GitHub's registry reachable at admission, and Sigstore's TUF repository when Kyverno first loads its trust root; Rekor is not called. When the registry is not reachable, `failurePolicy: Fail` refuses new pods.
 
 ## How to explain this to a customer

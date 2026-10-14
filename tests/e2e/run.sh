@@ -28,6 +28,7 @@ failed=0
 
 pass() { results+=("PASS  $1"); printf '  ok    %s\n' "$1"; }
 fail() { results+=("FAIL  $1"); printf '  FAIL  %s\n' "$1"; failed=1; }
+note() { results+=("NOTE  $1"); printf '  note  %s\n' "$1"; }
 step() { printf '\n== %s\n' "$*"; }
 
 # shellcheck disable=SC2329  # called by the EXIT trap
@@ -70,9 +71,24 @@ EOF
 try() {  # try <name> <image>: the API server's answer to a server-side dry run
   pod "$1" "$2" | kubectl apply --dry-run=server -f - 2>&1
 }
+# apply_once_more <label> <outfile> <kubectl apply args...>
+# A webhook that times out has made no decision: the API server refuses the
+# request, and a pod's controller would create it again. The run does the
+# same, once, and records it as a NOTE in the summary, so a slow registry
+# shows up as a trend and not as a refusal the policy never made. Not called
+# from a command substitution: note() has to reach this shell's results.
+apply_once_more() {
+  local label="$1" outfile="$2"; shift 2
+  kubectl apply "$@" >"$outfile" 2>&1 && return 0
+  grep -q 'failed calling webhook' "$outfile" && grep -q 'context deadline exceeded' "$outfile" || return 1
+  note "$label: the admission webhook timed out without a decision; applied once more, as a controller would"
+  kubectl apply "$@" >"$outfile" 2>&1
+}
 refused_for() {  # refused_for <label> <name> <image> <reason>
   local out
-  out="$(try "$2" "$3")"
+  pod "$2" "$3" >"$WORK/$2.pod.yaml"
+  apply_once_more "$1" "$WORK/$2.out" --dry-run=server -f "$WORK/$2.pod.yaml"
+  out="$(cat "$WORK/$2.out")"
   if grep -qF -- "$4" <<<"$out"; then pass "$1: refused ($4)"; else fail "$1: expected a refusal saying '$4', got: ${out:0:300}"; fi
 }
 
@@ -90,14 +106,15 @@ for plant in "$HERE"/plants/*.yaml; do
   expect="$(sed -n 's/^# expect: //p' "$plant")"
   sed -e "s#IMAGE_APP#$APP#" -e "s#IMAGE_UNSIGNED#$UNSIGNED#" -e "s#IMAGE_VULNERABLE#$VULNERABLE#" "$plant" >"$WORK/$name.yaml"
   if [ "$expect" = admitted ]; then
-    if kubectl apply -f "$WORK/$name.yaml" >/dev/null 2>"$WORK/$name.err" &&
+    if apply_once_more "$name" "$WORK/$name.err" -f "$WORK/$name.yaml" &&
        kubectl -n workloads wait --for=condition=Ready "pod/$name" --timeout=180s >/dev/null 2>&1; then
       pass "$name: admitted and running"
     else
       fail "$name was not admitted or did not run: $(cat "$WORK/$name.err")"
     fi
   else
-    out="$(kubectl apply --dry-run=server -f "$WORK/$name.yaml" 2>&1)"
+    apply_once_more "$name" "$WORK/$name.out" --dry-run=server -f "$WORK/$name.yaml"
+    out="$(cat "$WORK/$name.out")"
     grep -qF -- "$expect" <<<"$out" && pass "$name: refused ($expect)" \
       || fail "$name: expected a refusal saying '$expect', got: ${out:0:300}"
   fi

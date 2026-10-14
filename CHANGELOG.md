@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- The webhook waits 30 seconds, the API server's maximum, instead of 25: one verified admission took 4 to 26 seconds in the e2e runs. When the webhook still times out without a decision, the e2e run applies once more, as a pod's controller would, and records it as a NOTE in its summary; a refusal is never retried.
 - The attestor has no `ctlog` block. The transparency log is still required, but Kyverno checks each bundle's inclusion proof offline against Rekor's key from Sigstore's TUF root instead of calling Rekor at every admission. Rekor is off the admission path. Admission is not measurably faster: 4 to 17 seconds across eight e2e runs without the online client, inside the 7 to 26 seconds seen with it.
 
 ### Added

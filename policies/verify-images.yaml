@@ -25,7 +25,11 @@ spec:
   validationActions: [Deny]
   failurePolicy: Fail
   webhookConfiguration:
-    timeoutSeconds: 25
+    # The API server's maximum. One verified admission reads the image's
+    # bundles from the registry for the signature and for each attestation,
+    # and took 4 to 26 seconds in the e2e runs; past this the request fails
+    # closed and the pod's controller creates it again.
+    timeoutSeconds: 30
   evaluation:
     background:
       enabled: false
