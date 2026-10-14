@@ -90,7 +90,7 @@ Nothing in a cloud. The cluster is kind on one machine; the images live in GitHu
 
 ## What it does not do
 
-The [threat model](docs/threat-model.md) lists every threat with its control and check, three findings from the build, and what is not covered: with Kyverno down, unsigned images from the allowed registry path are admitted; old scans stay attached to an image; the provenance is Build L2, written by the job that builds; a running pod is not re-checked when its image's scan turns critical; the registry and Rekor are on the admission path.
+The [threat model](docs/threat-model.md) lists every threat with its control and check, four findings from the build, and what is not covered: with Kyverno down, unsigned images from the allowed registry path are admitted; a scan is only as fresh as the last publish run; the provenance is Build L2, written by the job that builds; a running pod is not re-checked when its image's scan turns critical; the registry and Rekor are on the admission path.
 
 ## Repository
 

@@ -47,3 +47,6 @@ jobs:
 
       - name: Each check, shown its planted violation
         run: python3 tests/static/plant_violations.py
+
+      - name: One Sigstore bundle of each kind, the rule on planted data
+        run: python3 scripts/referrers.py selftest

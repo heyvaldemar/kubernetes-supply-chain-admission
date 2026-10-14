@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- Attestations no longer pile up on the published images. The images build to the same digest, and every daily publish run added four Sigstore bundles to it; Kyverno verifies each one on every admission, so the refusal of the vulnerable image grew to between 7 and 26 seconds at eight bundles, against a 25-second webhook timeout, and two of ten e2e runs failed on the timeout. With two scans attached, which one the policy read depended on the order of GHCR's referrers index. The publish run now keeps the newest bundle of each kind (`scripts/referrers.py prune`), and Verify runs the selection rule on planted data.
+
 ### Added
 
 - CodeQL (security-extended) on the Python and the workflows, on every push and weekly.

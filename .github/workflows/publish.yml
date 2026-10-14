@@ -124,6 +124,16 @@ jobs:
             cosign attest --yes --type vuln --predicate "$out/vuln.json" "$ref"
           done
 
+      # Every run appends to the image's referrers index, and the build is
+      # reproducible, so the same digest would collect four more bundles a
+      # day: Kyverno verifies each one on every admission, and with two scans
+      # it reads whichever it verified last. scripts/referrers.py says more.
+      - name: Keep the newest bundle of each kind
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: awk '$1 != "unsigned" {print $2}' "$RUNNER_TEMP/out/digests" | xargs python3 scripts/referrers.py prune
+
       - name: What was published
         run: |
           {
