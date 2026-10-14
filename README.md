@@ -21,6 +21,7 @@ Every line is a check in `tests/e2e/run.sh` on a fresh cluster, or in `scripts/v
 | A signed image with a critical vulnerability is refused | the signed and attested image whose scan found CVE-2021-36159 refused for its scan |
 | An image signed by someone else is refused | an image signed by Sigstore's own release workflow, refused by Kyverno alone for its signer and by the native policy for its registry |
 | A verified image cannot be swapped under its tag | the signed image referenced by tag refused |
+| The policy reads one scan per image, the newest | the publish run keeps one bundle of each kind on each signed image, and the e2e run reads the registry and fails on two of a kind; the selection rule is run on planted data in Verify |
 | What still holds when Kyverno is down is measured | with Kyverno at zero, the unsigned image from this registry is admitted (the gap, on purpose) and an image from anywhere else is still refused; with Kyverno back, the unsigned image is refused again |
 | Every static check can fail | a base image by tag, a misspelled field in the allowlist binding, a signer pattern that trusts a whole account and a policy that admits when it cannot verify, each planted and each caught |
 

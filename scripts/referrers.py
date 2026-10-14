@@ -2,7 +2,7 @@
 """referrers.py - one Sigstore bundle of each kind per image.
 
     referrers.py prune IMAGE@DIGEST ...   rewrite each image's referrers index
-    referrers.py check IMAGE@DIGEST ...   exit 1 if any kind is there twice
+    referrers.py check IMAGE[:TAG|@DIGEST] ...  exit 1 if any kind is there twice
     referrers.py selftest                 the selection rule, on planted data
 
 cosign attaches every signature and attestation to the image as an OCI
@@ -86,6 +86,11 @@ class Registry:
             req.add_header("Content-Type", content_type)
         return urllib.request.urlopen(req, timeout=30)
 
+    def digest(self, tag):
+        accept = ", ".join([INDEX, MANIFEST, "application/vnd.docker.distribution.manifest.list.v2+json"])
+        with self._call("HEAD", "manifests/" + tag, accept=accept) as r:
+            return r.headers["Docker-Content-Digest"]
+
     def get(self, ref, accept):
         try:
             with self._call("GET", "manifests/" + ref, accept=accept) as r:
@@ -102,9 +107,14 @@ class Registry:
 
 def read(image, push):
     name, _, digest = image.partition("@")
-    if not name.startswith("ghcr.io/") or not digest.startswith("sha256:"):
-        sys.exit("expected ghcr.io/<repository>@sha256:<digest>, got %s" % image)
+    tag = None
+    if not digest and ":" in name.rsplit("/", 1)[-1]:
+        name, tag = name.rsplit(":", 1)
+    if not name.startswith("ghcr.io/") or not (digest.startswith("sha256:") or tag):
+        sys.exit("expected ghcr.io/<repository>@sha256:<digest> or :<tag>, got %s" % image)
     reg = Registry(name[len("ghcr.io/"):], push)
+    if tag:
+        digest = reg.digest(tag)
     tag = "sha256-" + digest[len("sha256:"):]
     index = reg.get(tag, INDEX)
     entries = []

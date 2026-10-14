@@ -5,8 +5,9 @@
 #
 #   app        signed, with provenance, an SBOM and a scan attached
 #   unsigned   no signature from that identity
+#   app, vulnerable  one bundle of each kind, no more
 #
-# Needs cosign. Run by the e2e workflow next to the cluster checks.
+# Needs cosign and python3. Run by the e2e workflow next to the cluster checks.
 set -uo pipefail
 
 REPO=ghcr.io/heyvaldemar/kubernetes-supply-chain-admission
@@ -30,6 +31,9 @@ for type in slsaprovenance1 cyclonedx vuln; do
     bad "app: no signed $type attestation"
   fi
 done
+# One bundle of each kind: the publish run prunes the rest, and Kyverno
+# verifies every bundle on an image at every admission (referrers.py).
+python3 "$(dirname "$0")/referrers.py" check "$REPO/app:latest" "$REPO/vulnerable:latest" || failed=1
 if cosign verify "$REPO/unsigned:latest" --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" >/dev/null 2>&1; then
   bad "unsigned: verified, and it must not be"
 else
