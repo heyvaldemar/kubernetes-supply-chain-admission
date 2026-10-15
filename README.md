@@ -119,7 +119,7 @@ docs/                 the threat model and the decisions
 
 [`docs/decisions/`](docs/decisions/): Kyverno's ImageValidatingPolicy over a second admission engine; keyless signing pinned to one workflow; provenance, an SBOM and a scan as gates; a native floor under the webhook. Each ends with how the choice would be explained to a customer.
 
-This repository is the supply chain half of [aws-eks-reference-platform](https://github.com/heyvaldemar/aws-eks-reference-platform), whose threat model lists unsigned images as its largest open risk. The [agent sandbox](https://github.com/heyvaldemar/kubernetes-ai-agent-sandbox) is the other piece next to it.
+This repository is the supply chain half of [aws-eks-reference-platform](https://github.com/heyvaldemar/aws-eks-reference-platform), whose threat model lists unsigned images as its largest open risk. The [agent sandbox](https://github.com/heyvaldemar/kubernetes-ai-agent-sandbox) is the other piece next to it, and [kubernetes-postgres-recovery](https://github.com/heyvaldemar/kubernetes-postgres-recovery) the database a tenant would run, restored every day three ways.
 
 ## Questions, bugs and changes
 
