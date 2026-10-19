@@ -11,6 +11,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- The status workflow hands its push credential to git through git's environment, not its command line, which any process on the runner can read.
 - helm v4.3.1 in `tools.lock`, its hashes checked against helm's own checksum files.
 - The webhook waits 30 seconds, the API server's maximum, instead of 25: one verified admission took 4 to 26 seconds in the e2e runs. When the webhook still times out without a decision, the e2e run applies once more, as a pod's controller would, and records it as a NOTE in its summary; a refusal is never retried.
 - The attestor has no `ctlog` block. The transparency log is still required, but Kyverno checks each bundle's inclusion proof offline against Rekor's key from Sigstore's TUF root instead of calling Rekor at every admission. Rekor is off the admission path. Admission is not measurably faster: 4 to 17 seconds across eight e2e runs without the online client, inside the 7 to 26 seconds seen with it.
@@ -19,6 +20,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- `AGENTS.md` (and a `CLAUDE.md` that imports it): the rules an AI agent working on this repository is held to: claims only as CI checks, a check trusted only after it has failed, risky changes proved on a branch and image changes on main after the publish run, where each pin lives, numbers read from runs, how a release is cut and verified, and what is never done (a weakened policy, a retried refusal, a second attestation of one type, a publish run from a branch).
 - A weekly check of every pin against upstream: `scripts/check-freshness.py`, run by the verify workflow on its schedule and by hand. It compares the charts the scripts install with their repository's index, every image pinned by digest with what its tag resolves to now, the tools in `tools.lock` with their newest releases, and the CI images. Dependabot here watched the workflows' actions and nothing else, so a chart, an image or a tool could fall behind without a sound. Its first run found helm one patch behind.
 - Live status: every e2e run uploads its checks and measurements (`E2E_RESULTS`), and `.github/workflows/status.yml` rewrites the `status` branch after each run with the last 30 days on main: green days, the streak, the latest checks (`scripts/status.py`). The README's second row of badges reads it.
 - A recording of the e2e run (`docs/demo/e2e.cast`, rendered to `docs/demo/e2e.gif`), in the README.
