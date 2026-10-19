@@ -101,6 +101,8 @@ Nothing in a cloud. The cluster is kind on one machine; the images live in GitHu
 
 The [threat model](docs/threat-model.md) lists every threat with its control and check, five findings from the build, and what is not covered: with Kyverno down, unsigned images from the allowed registry path are admitted; a scan is only as fresh as the last publish run; the provenance is Build L2, written by the job that builds; a running pod is not re-checked when its image's scan turns critical; the registry is on the admission path.
 
+The [Cyber Resilience Act mapping](docs/cyber-resilience-act.md) takes each control to the clause of Regulation (EU) 2024/2847 it produces evidence for, Article 13(5)'s due diligence on third-party components first, and says what each leaves out: the 24-hour reporting that applies since 11 September 2026, the support period and the conformity assessment are processes, and no pipeline carries them.
+
 ## Repository
 
 ```text
@@ -112,7 +114,7 @@ kind/ kyverno/        the cluster and Kyverno's chart, values and image pins
 tests/e2e/            the checks against a running cluster, and the planted pods
 tests/static/         the planted violations for the static checks
 scripts/              install the tools and Kyverno, the static checks
-docs/                 the threat model and the decisions
+docs/                 the threat model, the decisions and the Cyber Resilience Act mapping
 ```
 
 ## Decisions
