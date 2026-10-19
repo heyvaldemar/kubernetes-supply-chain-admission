@@ -44,7 +44,7 @@ Each pin has a home, and `scripts/check-freshness.py` compares them all with ups
 - The Kubernetes schemas at one commit in `scripts/validate.sh`.
 - Actions by commit SHA, moved by Dependabot (`.github/dependabot.yml`) and merged only after e2e and Verify pass.
 
-Some pins have copies: the Alpine 3.22 digest is in both Dockerfiles, `tests/static/plants.tsv` and the repro workflow, and the other signer's image is in `tests/e2e/run.sh` and `tests/e2e/plants/other-signer.yaml`. Move every copy; a plant whose text is gone is reported stale. `images/vulnerable` stays on Alpine 3.10: its critical CVE is the point.
+Some pins have copies: the Alpine 3.22 digest is in the Dockerfiles of `app`, `unsigned` and `partial`, `tests/static/plants.tsv` and the repro workflow, and the other signer's image is in `tests/e2e/run.sh` and `tests/e2e/plants/other-signer.yaml`. Move every copy; a plant whose text is gone is reported stale. `images/vulnerable` stays on Alpine 3.10: its critical CVE is the point.
 
 ## Numbers
 
