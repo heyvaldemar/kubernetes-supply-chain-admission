@@ -20,6 +20,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- Three e2e plants, `no-provenance`, `no-sbom` and `no-scan`: a signed image missing each attestation, refused for the one it lacks. `scripts/verify-published.sh` checks each is signed and lacks exactly that attestation. The README's claims table, the threat model and the Cyber Resilience Act mapping now cite these refusals; the mapping no longer lists the gap.
 - Three more published images, `no-provenance`, `no-sbom` and `no-scan`, from `images/partial`: signed by the publish workflow like `app`, each with one attestation left off, so the e2e can show the policy refusing each missing attestation on its own.
 - `docs/cyber-resilience-act.md`: each control mapped to the clause of the Cyber Resilience Act (Regulation (EU) 2024/2847) it produces evidence for, quoted from the Official Journal text, with what each leaves out. Writing it found a gap the README does not claim to close: no e2e plant shows an image signed without an SBOM, or without provenance, being refused.
 - `AGENTS.md` (and a `CLAUDE.md` that imports it): the rules an AI agent working on this repository is held to: claims only as CI checks, a check trusted only after it has failed, risky changes proved on a branch and image changes on main after the publish run, where each pin lives, numbers read from runs, how a release is cut and verified, and what is never done (a weakened policy, a retried refusal, a second attestation of one type, a publish run from a branch).

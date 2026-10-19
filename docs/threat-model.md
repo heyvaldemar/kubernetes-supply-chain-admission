@@ -14,9 +14,9 @@ The cluster's workloads, from code nobody meant to run there. A digest pins byte
 |---|---|---|
 | An image pushed by hand, or by a compromised step that does not hold the build's identity | a cosign keyless signature by exactly one workflow on `main` of this repository, checked against Sigstore's transparency log | the unsigned image, pushed by the same workflow, refused |
 | An image signed, by someone else | the signer is pinned to one workflow identity, not to an account or a pattern; every image in the pod is matched, from any registry | an image signed by Sigstore's own release workflow refused by Kyverno alone; the static check fails on a signer pattern (plant) |
-| An image built from somewhere else | signed SLSA provenance whose source must be this repository | provenance is required by the policy for every image; the signed image carries it |
-| An image nobody can account for | a signed CycloneDX SBOM | required by the policy |
-| An image with a known critical vulnerability | a signed scan, re-run daily, that must have read an operating system's packages and found nothing critical | the signed and attested image whose scan found CVE-2021-36159 refused |
+| An image built from somewhere else | signed SLSA provenance whose source must be this repository | an image signed by the publish workflow with no provenance refused; the signed image carries it |
+| An image nobody can account for | a signed CycloneDX SBOM | an image signed by the publish workflow with no SBOM refused |
+| An image with a known critical vulnerability | a signed scan, re-run daily, that must have read an operating system's packages and found nothing critical | the signed and attested image whose scan found CVE-2021-36159 refused; an image signed with no scan refused |
 | A verified image swapped for another under the same tag | references by digest only, enforced twice: by the image policy and by a native ValidatingAdmissionPolicy | the signed image referenced by tag refused |
 | A verification that cannot run is read as a pass | `failurePolicy: Fail` | the static check fails on `Ignore` (plant) |
 

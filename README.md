@@ -27,6 +27,7 @@ Every line is a check in `tests/e2e/run.sh` on a fresh cluster, or in `scripts/v
 | An image with a signature, provenance, an SBOM and a clean scan runs | the signed demo image, by its digest from the registry today, admitted and running |
 | An image the build did not sign is refused | the unsigned image, pushed by the same workflow, refused for its signature |
 | A signed image with a critical vulnerability is refused | the signed and attested image whose scan found CVE-2021-36159 refused for its scan |
+| A signed image is refused without each attestation | three images the publish workflow signs and then leaves one attestation off, refused for the one each lacks: provenance, SBOM, scan |
 | An image signed by someone else is refused | an image signed by Sigstore's own release workflow, refused by Kyverno alone for its signer and by the native policy for its registry |
 | A verified image cannot be swapped under its tag | the signed image referenced by tag refused |
 | The policy reads one scan per image, the newest | the publish run keeps one bundle of each kind on each signed image, and the e2e run reads the registry and fails on two of a kind; the selection rule is run on planted data in Verify |

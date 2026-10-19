@@ -1,0 +1,25 @@
+# expect: every image carries a signed scan that read its operating system's packages and found nothing critical
+# Signed by the publish workflow, with provenance and an SBOM, and no scan.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-scan
+  namespace: workloads
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: app
+      image: IMAGE_NO_SCAN
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]

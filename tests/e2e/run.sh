@@ -6,8 +6,9 @@
 #   1-4. each manifest in tests/e2e/plants, with the digests the registry
 #      holds today filled in: the signed image (provenance, SBOM, a clean
 #      scan) admitted and running; the unsigned image, the one with a
-#      critical vulnerability, a reference by tag and an image signed by
-#      someone else each refused, for the reason the plant names
+#      critical vulnerability, a reference by tag, an image signed by
+#      someone else, and three signed images that each lack one attestation
+#      (provenance, SBOM, scan) each refused, for the reason the plant names
 #   5. the image signed by someone else, refused by Kyverno alone too
 #   6. with Kyverno's admission controller at zero, the unsigned image from
 #      this registry is admitted (the gap docs/threat-model.md names) and an
@@ -95,7 +96,10 @@ refused_for() {  # refused_for <label> <name> <image> <reason>
 APP="$REPO/app@$(digest_of "$REPO/app:latest")"
 UNSIGNED="$REPO/unsigned@$(digest_of "$REPO/unsigned:latest")"
 VULNERABLE="$REPO/vulnerable@$(digest_of "$REPO/vulnerable:latest")"
-for ref in "$APP" "$UNSIGNED" "$VULNERABLE"; do
+NO_PROVENANCE="$REPO/no-provenance@$(digest_of "$REPO/no-provenance:latest")"
+NO_SBOM="$REPO/no-sbom@$(digest_of "$REPO/no-sbom:latest")"
+NO_SCAN="$REPO/no-scan@$(digest_of "$REPO/no-scan:latest")"
+for ref in "$APP" "$UNSIGNED" "$VULNERABLE" "$NO_PROVENANCE" "$NO_SBOM" "$NO_SCAN"; do
   [[ "$ref" == *@sha256:* ]] || { echo "could not resolve $ref; has the publish workflow run?" >&2; exit 1; }
 done
 
@@ -104,7 +108,9 @@ step "1-4. the plants, with today's digests"
 for plant in "$HERE"/plants/*.yaml; do
   name="$(basename "$plant" .yaml)"
   expect="$(sed -n 's/^# expect: //p' "$plant")"
-  sed -e "s#IMAGE_APP#$APP#" -e "s#IMAGE_UNSIGNED#$UNSIGNED#" -e "s#IMAGE_VULNERABLE#$VULNERABLE#" "$plant" >"$WORK/$name.yaml"
+  sed -e "s#IMAGE_APP#$APP#" -e "s#IMAGE_UNSIGNED#$UNSIGNED#" -e "s#IMAGE_VULNERABLE#$VULNERABLE#" \
+    -e "s#IMAGE_NO_PROVENANCE#$NO_PROVENANCE#" -e "s#IMAGE_NO_SBOM#$NO_SBOM#" -e "s#IMAGE_NO_SCAN#$NO_SCAN#" \
+    "$plant" >"$WORK/$name.yaml"
   if [ "$expect" = admitted ]; then
     if apply_once_more "$name" "$WORK/$name.err" -f "$WORK/$name.yaml" &&
        kubectl -n workloads wait --for=condition=Ready "pod/$name" --timeout=180s >/dev/null 2>&1; then

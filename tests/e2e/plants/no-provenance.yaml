@@ -1,0 +1,25 @@
+# expect: every image carries signed provenance that says it was built from this repository
+# Signed by the publish workflow, with an SBOM and a scan, and no provenance.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-provenance
+  namespace: workloads
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: app
+      image: IMAGE_NO_PROVENANCE
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
