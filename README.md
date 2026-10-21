@@ -36,7 +36,7 @@ Every line is a check in `tests/e2e/run.sh` on a fresh cluster, or in `scripts/v
 
 ## What the run reports
 
-From a run against the images published today:
+From [run 39640932044](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/39640932044), against the images published that day:
 
 ```text
 PASS  by-tag: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest)
@@ -45,8 +45,10 @@ PASS  signed: admitted and running
 PASS  unsigned: refused (every image is signed by this repository's publish workflow on main)
 PASS  vulnerable: refused (a signed scan that read its operating system's packages and found nothing critical)
 PASS  another signer, Kyverno alone: refused (every image is signed by this repository's publish workflow on main)
-PASS  with Kyverno at zero, the unsigned image from this registry is admitted: signature checks need a running webhook
-PASS  another registry, Kyverno down: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/)
+NOTE  Kyverno removed its webhook configuration as it went down: only the API server's guard is left to refuse
+PASS  with Kyverno at zero, the unsigned image from this registry: refused (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)
+PASS  with Kyverno at zero, the signed image too, an outage and not a hole: refused (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)
+PASS  with Kyverno at zero, an image from another registry: refused (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)
 PASS  with Kyverno back, the unsigned image is refused again
 ```
 
