@@ -1,0 +1,50 @@
+# Nothing runs in a verified namespace while Kyverno is not there to verify it
+# (ADR 5). Kyverno checks every image's signature and attestations in a
+# webhook, and when its admission controller is scaled to zero or its
+# Deployment deleted it removes its own webhook configurations
+# (pkg/webhooks/server.go, cleanup, when runtime.IsGoingDown(); Kyverno
+# 1.19.1). From then on the API server asks nobody, and the e2e run measured
+# the unsigned image from this registry admitted. The registry allowlist (ADR
+# 4) kept everything from elsewhere out; it could not keep this out.
+#
+# This policy is the API server's own and needs nothing running. Its parameter
+# is Kyverno's resource webhook configuration, and a pod in a verified
+# namespace is admitted only while that configuration exists and still holds
+# the webhook for verify-images, failing closed. Kyverno gone, its
+# configuration gone, the webhook dropped or turned to Ignore: refused, before
+# Kyverno would have been asked. The same guard as the air-gapped agent's
+# ADR 17, where a daily game day found the hole on a model.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: images-need-kyverno
+spec:
+  failurePolicy: Fail
+  paramKind:
+    apiVersion: admissionregistration.k8s.io/v1
+    kind: ValidatingWebhookConfiguration
+  matchConstraints:
+    namespaceSelector:
+      matchLabels:
+        supply-chain.heyvaldemar.com/verified: "true"
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: >-
+        params.webhooks.exists(w, w.name == 'ivpol.validate.kyverno.svc-fail-finegrained-verify-images' &&
+          w.failurePolicy == 'Fail')
+      message: no image runs here while Kyverno is not there to verify it (its webhook for verify-images is missing)
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: images-need-kyverno
+spec:
+  policyName: images-need-kyverno
+  validationActions: [Deny]
+  paramRef:
+    name: kyverno-resource-validating-webhook-cfg
+    parameterNotFoundAction: Deny

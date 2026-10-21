@@ -53,6 +53,18 @@ jobs:
         run: |
           kubectl apply -f manifests/namespace.yaml -f policies/
           kubectl wait --for=jsonpath='{.status.conditionStatus.ready}'=true imagevalidatingpolicy/verify-images --timeout=120s
+          # The guard (policies/kyverno-guard.yaml) admits nothing in the
+          # verified namespace until Kyverno has written its webhook for
+          # verify-images. Wait for it, and stop if it never comes under
+          # that name: the guard would refuse every pod for good.
+          hook=ivpol.validate.kyverno.svc-fail-finegrained-verify-images
+          for _ in $(seq 1 60); do
+            kubectl get validatingwebhookconfiguration kyverno-resource-validating-webhook-cfg -o jsonpath='{.webhooks[*].name}' 2>/dev/null \
+              | tr ' ' '\n' | grep -qx "$hook" && exit 0
+            sleep 2
+          done
+          echo "::error::Kyverno never registered $hook; the guard would refuse every pod"
+          exit 1
 
       - name: Run the checks
         env:

@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Security
+
+- With Kyverno's admission controller at zero, an unsigned image from this repository's own registry path was admitted: Kyverno removes its webhook configurations as it goes down, and the registry allowlist cannot check a signature. The e2e run measured it on purpose and the threat model listed it. `policies/kyverno-guard.yaml` (ADR 5) is a ValidatingAdmissionPolicy whose parameter is Kyverno's own webhook configuration, `parameterNotFoundAction: Deny`: while the webhook for `verify-images` is missing, the API server refuses every pod in the verified namespace. The e2e run's step 6 now requires the unsigned image, the signed image and one from another registry refused with Kyverno at zero; CI waits for the webhook before any pod; static check `policy` holds the guard, two plants. The same guard as the air-gapped agent's ADR 17.
+
 ### Fixed
 
 - `make up` on macOS: its make (3.81) ran a simple recipe without a shell, so the `PATH` the Makefile exports never reached it and `kind` was not found. Every recipe now runs in bash.

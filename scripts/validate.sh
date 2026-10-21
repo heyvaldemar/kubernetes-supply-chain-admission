@@ -25,7 +25,7 @@ check_kubeconform() {
   mkdir -p .cache/kubeconform
   kubeconform -strict -summary -output text -kubernetes-version "$KUBE_VERSION" \
     -cache .cache/kubeconform -schema-location "$K8S_SCHEMAS" \
-    manifests policies/registry-allowlist.yaml tests/e2e/plants
+    manifests policies/registry-allowlist.yaml policies/kyverno-guard.yaml tests/e2e/plants
 }
 
 check_images() {
@@ -62,9 +62,21 @@ text = " ".join(v["expression"] for v in spec.get("validations", []))
 for name in ("attestors.publisher", "attestations.provenance", "attestations.sbom", "attestations.scan"):
     if name not in text:
         bad.append(f"no validation uses {name}")
+# The guard (ADR 5): with Kyverno's webhook for verify-images missing, as
+# Kyverno leaves it when it is scaled to zero, nothing is admitted.
+guard = list(yaml.safe_load_all(open("policies/kyverno-guard.yaml")))
+vap = next((d for d in guard if d and d.get("kind") == "ValidatingAdmissionPolicy"), {})
+bnd = next((d for d in guard if d and d.get("kind") == "ValidatingAdmissionPolicyBinding"), {})
+hook = "ivpol.validate.kyverno.svc-fail-finegrained-%s" % p["metadata"]["name"]
+gtext = " ".join(v.get("expression", "") for v in vap.get("spec", {}).get("validations", []))
+if vap.get("spec", {}).get("failurePolicy") != "Fail" or hook not in gtext or "'Fail'" not in gtext:
+    bad.append("the guard does not require Kyverno's webhook %s, failing closed" % hook)
+ref = bnd.get("spec", {}).get("paramRef", {})
+if ref.get("name") != "kyverno-resource-validating-webhook-cfg" or ref.get("parameterNotFoundAction") != "Deny":
+    bad.append("the guard admits when Kyverno's webhook configuration is gone")
 for b in bad:
     print("policy: " + b)
-print("the image policy pins one signer, denies, fails closed" if not bad else f"{len(bad)} problem(s)")
+print("the image policy pins one signer, denies, fails closed, and the guard refuses everything while its webhook is gone" if not bad else f"{len(bad)} problem(s)")
 sys.exit(1 if bad else 0)
 PY
 }

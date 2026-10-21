@@ -1,6 +1,6 @@
 # 4. A native floor under the webhook
 
-- Status: accepted
+- Status: accepted; its measured gap closed by [ADR 5](0005-no-image-while-kyverno-is-away.md) (2026-10-21)
 - Date: 2026-10-13
 
 ## Context

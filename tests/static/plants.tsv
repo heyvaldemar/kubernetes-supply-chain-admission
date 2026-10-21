@@ -3,3 +3,5 @@
 "policies/registry-allowlist.yaml"	"  validationActions: [Deny]\n"	"  validationAction: [Deny]\n"	"kubeconform"	"a misspelled field in the allowlist binding"
 "policies/verify-images.yaml"	"            - subject: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/.github/workflows/publish.yml@refs/heads/main\n"	"            - subject: https://github.com/heyvaldemar/*\n"	"policy"	"a signer pattern that trusts every workflow of an account"
 "policies/verify-images.yaml"	"  failurePolicy: Fail\n"	"  failurePolicy: Ignore\n"	"policy"	"a policy that admits when it cannot verify"
+"policies/kyverno-guard.yaml"	"    parameterNotFoundAction: Deny\n"	"    parameterNotFoundAction: Allow\n"	"policy"	"a guard that admits once Kyverno has taken its webhooks away"
+"policies/kyverno-guard.yaml"	"svc-fail-finegrained-verify-images'"	"svc-fail-finegrained-verify-other'"	"policy"	"a guard that waits for a webhook the image policy does not have"

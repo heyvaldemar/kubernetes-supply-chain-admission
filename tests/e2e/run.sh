@@ -138,13 +138,27 @@ sleep 3
 step "6. Kyverno down"
 kubectl -n kyverno scale deployment kyverno-admission-controller --replicas=0 >/dev/null
 kubectl -n kyverno wait --for=delete pod -l app.kubernetes.io/component=admission-controller --timeout=180s >/dev/null 2>&1
-sleep 5
-if try unsigned "$UNSIGNED" | grep -q "created (server dry run)"; then
-  pass "with Kyverno at zero, the unsigned image from this registry is admitted: signature checks need a running webhook"
+# Kyverno removes its webhook configurations as it goes down only once it has
+# seen its own Deployment at zero, which it does not always have by then.
+# Wait up to half a minute for them to go, so the case the guard (ADR 5)
+# exists for is the one tested, and say which it was.
+for _ in $(seq 1 15); do
+  kubectl get validatingwebhookconfiguration kyverno-resource-validating-webhook-cfg >/dev/null 2>&1 || break
+  sleep 2
+done
+if kubectl get validatingwebhookconfiguration kyverno-resource-validating-webhook-cfg >/dev/null 2>&1; then
+  note "Kyverno kept its webhook configuration this time: the API server refuses by failing to call it"
 else
-  fail "with Kyverno at zero, the unsigned image was refused; the threat model's gap has changed: $(try unsigned "$UNSIGNED" | head -1)"
+  note "Kyverno removed its webhook configuration as it went down: only the API server's guard is left to refuse"
 fi
-refused_for "another registry, Kyverno down" other "$OTHER" "images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/"
+down() {  # down <label> <name> <image>: refused, for whatever reason the API server gives
+  local out; out="$(try "$2" "$3")"
+  if grep -q "created (server dry run)" <<<"$out"; then fail "$1: admitted"
+  else pass "$1: refused ($(sed -E 's/.*denied request: //; s/.*(failed calling webhook)/\1/' <<<"$out" | head -1 | cut -c1-120))"; fi
+}
+down "with Kyverno at zero, the unsigned image from this registry" unsigned "$UNSIGNED"
+down "with Kyverno at zero, the signed image too, an outage and not a hole" app "$APP"
+down "with Kyverno at zero, an image from another registry" other "$OTHER"
 kubectl -n kyverno scale deployment kyverno-admission-controller --replicas=1 >/dev/null
 kubectl -n kyverno rollout status deployment/kyverno-admission-controller --timeout=300s >/dev/null
 back=""

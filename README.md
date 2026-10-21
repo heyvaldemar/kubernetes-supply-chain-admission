@@ -31,7 +31,7 @@ Every line is a check in `tests/e2e/run.sh` on a fresh cluster, or in `scripts/v
 | An image signed by someone else is refused | an image signed by Sigstore's own release workflow, refused by Kyverno alone for its signer and by the native policy for its registry |
 | A verified image cannot be swapped under its tag | the signed image referenced by tag refused |
 | The policy reads one scan per image, the newest | the publish run keeps one bundle of each kind on each signed image, and the e2e run reads the registry and fails on two of a kind; the selection rule is run on planted data in Verify |
-| What still holds when Kyverno is down is measured | with Kyverno at zero, the unsigned image from this registry is admitted (the gap, on purpose) and an image from anywhere else is still refused; with Kyverno back, the unsigned image is refused again |
+| Nothing starts while Kyverno is down | with Kyverno at zero, which removes its own webhooks as it goes, the API server's own guard ([ADR 5](docs/decisions/0005-no-image-while-kyverno-is-away.md)) refuses the unsigned image from this registry, the signed image too, an outage and not a hole, and an image from anywhere else; with Kyverno back, the unsigned image is refused for its signature again. Until 2026-10-21 this row measured the unsigned image admitted, on purpose |
 | Every static check can fail | a base image by tag, a misspelled field in the allowlist binding, a signer pattern that trusts a whole account and a policy that admits when it cannot verify, each planted and each caught |
 
 ## What the run reports
@@ -100,7 +100,7 @@ Nothing in a cloud. The cluster is kind on one machine; the images live in GitHu
 
 ## What it does not do
 
-The [threat model](docs/threat-model.md) lists every threat with its control and check, five findings from the build, and what is not covered: with Kyverno down, unsigned images from the allowed registry path are admitted; a scan is only as fresh as the last publish run; the provenance is Build L2, written by the job that builds; a running pod is not re-checked when its image's scan turns critical; the registry is on the admission path.
+The [threat model](docs/threat-model.md) lists every threat with its control and check, five findings from the build, and what is not covered: a scan is only as fresh as the last publish run; the provenance is Build L2, written by the job that builds; a running pod is not re-checked when its image's scan turns critical; the registry is on the admission path.
 
 The [Cyber Resilience Act mapping](docs/cyber-resilience-act.md) takes each control to the clause of Regulation (EU) 2024/2847 it produces evidence for, Article 13(5)'s due diligence on third-party components first, and says what each leaves out: the 24-hour reporting that applies since 11 September 2026, the support period and the conformity assessment are processes, and no pipeline carries them.
 
