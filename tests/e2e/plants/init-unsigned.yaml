@@ -1,0 +1,37 @@
+# expect: every image is signed by this repository's publish workflow on main
+# The signed image, and before it an init container that nobody signed: an
+# init container runs first, with the pod's identity and volumes.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-unsigned
+  namespace: workloads
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  initContainers:
+    - name: init
+      image: IMAGE_UNSIGNED
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
+  containers:
+    - name: app
+      image: IMAGE_APP
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]

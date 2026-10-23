@@ -1,0 +1,31 @@
+# expect: images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest
+# The signed image, and an image from another registry mounted as a volume
+# beside it.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: volume-elsewhere
+  namespace: workloads
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: app
+      image: IMAGE_APP
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
+      volumeMounts:
+        - {name: content, mountPath: /content, readOnly: true}
+  volumes:
+    - name: content
+      image: {reference: IMAGE_OTHER, pullPolicy: IfNotPresent}

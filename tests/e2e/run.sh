@@ -8,12 +8,19 @@
 #      scan) admitted and running; the unsigned image, the one with a
 #      critical vulnerability, a reference by tag, an image signed by
 #      someone else, and three signed images that each lack one attestation
-#      (provenance, SBOM, scan) each refused, for the reason the plant names
+#      (provenance, SBOM, scan) each refused, for the reason the plant names;
+#      and beside the signed image, an init container nobody signed, an
+#      image nobody signed mounted as a volume, and a volume from another
+#      registry, each refused: every image a pod uses meets the same bar
 #   5. the image signed by someone else, refused by Kyverno alone too
 #   6. with Kyverno's admission controller at zero, the unsigned image from
 #      this registry is admitted (the gap docs/threat-model.md names) and an
 #      image from anywhere else is still refused; with Kyverno back, the
 #      unsigned image is refused again
+#   7. an ephemeral container added to the running signed pod, the way
+#      `kubectl debug` adds one, through the pod's ephemeralcontainers
+#      subresource: the signed image admitted (the control), one nobody
+#      signed and one from another registry refused
 #
 # Needs kubectl, docker (for `docker buildx imagetools`) and python3.
 # shellcheck disable=SC2015
@@ -110,6 +117,7 @@ for plant in "$HERE"/plants/*.yaml; do
   expect="$(sed -n 's/^# expect: //p' "$plant")"
   sed -e "s#IMAGE_APP#$APP#" -e "s#IMAGE_UNSIGNED#$UNSIGNED#" -e "s#IMAGE_VULNERABLE#$VULNERABLE#" \
     -e "s#IMAGE_NO_PROVENANCE#$NO_PROVENANCE#" -e "s#IMAGE_NO_SBOM#$NO_SBOM#" -e "s#IMAGE_NO_SCAN#$NO_SCAN#" \
+    -e "s#IMAGE_OTHER#$OTHER#" \
     "$plant" >"$WORK/$name.yaml"
   if [ "$expect" = admitted ]; then
     if apply_once_more "$name" "$WORK/$name.err" -f "$WORK/$name.yaml" &&
@@ -169,6 +177,31 @@ for _ in $(seq 1 30); do
 done
 grep -q "publish workflow on main" <<<"$back" && pass "with Kyverno back, the unsigned image is refused again" \
   || fail "with Kyverno back, the unsigned image is not refused: ${back:0:300}"
+
+# --- 7 -----------------------------------------------------------------------
+step "7. an ephemeral container in the running signed pod"
+# What `kubectl debug` sends: the running pod with one more ephemeral
+# container, to its ephemeralcontainers subresource, as a dry run. A policy
+# that matches pods alone never sees this request.
+ephemeral() {  # ephemeral <image>: the API server's answer
+  kubectl -n workloads get pod signed -o json | python3 -c '
+import json, sys
+pod = json.load(sys.stdin)
+pod["spec"].setdefault("ephemeralContainers", []).append({
+    "name": "debug", "image": sys.argv[1], "command": ["sleep", "60"],
+    "securityContext": {"allowPrivilegeEscalation": False, "readOnlyRootFilesystem": True,
+                        "runAsNonRoot": True, "capabilities": {"drop": ["ALL"]}}})
+print(json.dumps(pod))' "$1" | kubectl replace --raw "/api/v1/namespaces/workloads/pods/signed/ephemeralcontainers?dryRun=All" -f - 2>&1
+}
+if out="$(ephemeral "$APP")"; then pass "control: an ephemeral container with the signed image is admitted"
+else fail "control: an ephemeral container with the signed image was refused, so the refusals below prove nothing: ${out:0:300}"; fi
+for case in "unsigned|$UNSIGNED|every image is signed by this repository's publish workflow on main" \
+            "from another registry|$OTHER|images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest"; do
+  IFS='|' read -r what image expect <<<"$case"
+  if out="$(ephemeral "$image")"; then fail "an ephemeral container $what: admitted"
+  elif grep -qF -- "$expect" <<<"$out"; then pass "an ephemeral container $what: refused ($expect)"
+  else fail "an ephemeral container $what: expected a refusal saying '$expect', got: ${out:0:300}"; fi
+done
 
 # A copy the status workflow reads (scripts/status.py), when one is asked for.
 if [ -n "${E2E_RESULTS:-}" ]; then
