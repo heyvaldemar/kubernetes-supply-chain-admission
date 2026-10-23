@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
-- Kyverno 1.19.2 (chart 3.9.2, from 1.19.1 and 3.9.1), every image it runs pinned by digest in `kyverno/images.yaml`. Its release names webhooks for namespaced image policies apart from cluster ones (kyverno/kyverno#17617) and verifies at admission instead of trusting what an earlier stage recorded (#17994).
+- Kyverno 1.19.2 (chart 3.9.2, from 1.19.1 and 3.9.1), every image it runs pinned by digest in `kyverno/images.yaml`. Its release names webhooks for namespaced image policies apart from cluster ones (kyverno/kyverno#17617) and verifies at admission instead of trusting what an earlier stage recorded (#17994). Every finding here that named 1.19.1 was checked against it: the webhook configurations still go when the admission controller is scaled to zero (`pkg/webhooks/server.go`, and the e2e run saw it, 39898127216), so the guard still matters, under the same webhook name; image volumes are still not extracted by default (`pkg/cel/compiler/images.go`), so ADR 6's extractor still matters; `extractPayload()` still returns the whole statement; Rekor's path is unchanged. The e2e run on the branch passed all 21 checks.
 
 ## [1.1.0] - 2026-10-22
 

@@ -7,7 +7,7 @@
 
 ADR 4 put a native floor under the webhook and measured what it left: with Kyverno's admission controller at zero, an unsigned image from this repository's own registry path was admitted, because the registry allowlist cannot check a signature. The e2e run asserted that gap on purpose, and the threat model listed it as residual, to be closed by running Kyverno redundantly and paging on its absence.
 
-The gap has a mechanism. Kyverno removes its own webhook configurations when its Deployment is at zero replicas or being deleted (`pkg/webhooks/server.go`, `cleanup`, when `runtime.IsGoingDown()`, Kyverno 1.19.1), so `failurePolicy: Fail` has nothing left to fail with. Replicas and a disruption budget keep Kyverno up through a node loss; they do nothing against someone scaling it to zero or uninstalling it, which is exactly when the configurations go. The air-gapped agent hit the same hole on a model in its daily game day and closed it natively (its ADR 17).
+The gap has a mechanism. Kyverno removes its own webhook configurations when its Deployment is at zero replicas or being deleted (`pkg/webhooks/server.go`, `cleanup`, when `runtime.IsGoingDown()`, Kyverno 1.19.1, unchanged in 1.19.2), so `failurePolicy: Fail` has nothing left to fail with. Replicas and a disruption budget keep Kyverno up through a node loss; they do nothing against someone scaling it to zero or uninstalling it, which is exactly when the configurations go. The air-gapped agent hit the same hole on a model in its daily game day and closed it natively (its ADR 17).
 
 ## Decision
 
@@ -19,7 +19,7 @@ The gap has a mechanism. Kyverno removes its own webhook configurations when its
 ## Consequences
 
 - With Kyverno away, no new pod starts in a verified namespace, a verified image included: an outage of deployments there, not of running pods. Running Kyverno three times over and paging on its absence still matter; they now shorten an outage instead of closing a hole.
-- The guard names Kyverno's configuration and its webhook by the names Kyverno 1.19.1 gives them. An upgrade that renames either makes the guard refuse everything in the verified namespace, which the e2e catches before anything ships.
+- The guard names Kyverno's configuration and its webhook by the names Kyverno 1.19.1 gives them, and 1.19.2 gives them still: its renaming (kyverno/kyverno#17617) is for namespaced image policies. An upgrade that renames either makes the guard refuse everything in the verified namespace, which the e2e catches before anything ships.
 - Uninstalling Kyverno now stops pods from starting in the verified namespace until the guard is removed too. That is the point.
 
 ## Alternatives

@@ -14,13 +14,13 @@
 # Every image the pod uses, that is: its containers, its init containers,
 # the ephemeral containers `kubectl debug` adds to it through the pod's
 # ephemeralcontainers subresource, and its image volumes, whose files the
-# signed process reads. Kyverno 1.19.1 extracts the first three and no image
+# signed process reads. Kyverno 1.19.1 and 1.19.2 extract the first three and no image
 # volume (kyverno/kyverno#17555 would have; it was closed unmerged on
 # 2026-10-22), so `images` below adds them, and every validation reads all
 # four (ADR 6).
 #
 # For a cosign in-toto attestation, extractPayload() returns the whole in-toto
-# statement in Kyverno 1.19.1, so the attestation's content is under
+# statement in Kyverno 1.19.1 and 1.19.2, so the attestation's content is under
 # .predicate. The documentation's example reads .bomFormat at the top level,
 # which is right for the Notary referrer it declares, whose payload is the SBOM
 # itself; written that way here, the path finds nothing.

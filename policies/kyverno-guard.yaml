@@ -3,7 +3,7 @@
 # webhook, and when its admission controller is scaled to zero or its
 # Deployment deleted it removes its own webhook configurations
 # (pkg/webhooks/server.go, cleanup, when runtime.IsGoingDown(); Kyverno
-# 1.19.1). From then on the API server asks nobody, and the e2e run measured
+# 1.19.1 and 1.19.2). From then on the API server asks nobody, and the e2e run measured
 # the unsigned image from this registry admitted. The registry allowlist (ADR
 # 4) kept everything from elsewhere out; it could not keep this out.
 #
