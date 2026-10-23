@@ -11,6 +11,13 @@
 #
 # Every image in the pod is matched (glob "*"): an image from anywhere else,
 # signed by anyone else, is refused for the same reason an unsigned one is.
+# Every image the pod uses, that is: its containers, its init containers,
+# the ephemeral containers `kubectl debug` adds to it through the pod's
+# ephemeralcontainers subresource, and its image volumes, whose files the
+# signed process reads. Kyverno 1.19.1 extracts the first three and no image
+# volume (kyverno/kyverno#17555 would have; it was closed unmerged on
+# 2026-10-22), so `images` below adds them, and every validation reads all
+# four (ADR 6).
 #
 # For a cosign in-toto attestation, extractPayload() returns the whole in-toto
 # statement in Kyverno 1.19.1, so the attestation's content is under
@@ -41,9 +48,13 @@ spec:
       - apiGroups: [""]
         apiVersions: [v1]
         operations: [CREATE, UPDATE]
-        resources: [pods]
+        resources: [pods, pods/ephemeralcontainers]
   matchImageReferences:
     - glob: "*"
+  images:
+    - name: volumes
+      expression: >-
+        object.spec.?volumes.orValue([]).filter(v, has(v.image)).map(v, v.image.reference)
   validationConfigurations:
     verifyDigest: true
     mutateDigest: false
@@ -72,20 +83,20 @@ spec:
         type: https://cosign.sigstore.dev/attestation/vuln/v1
   validations:
     - expression: >-
-        images.containers.map(image, verifyImageSignatures(image, [attestors.publisher])).all(n, n > 0)
+        (images.containers + images.initContainers + images.ephemeralContainers + images.volumes).map(image, verifyImageSignatures(image, [attestors.publisher])).all(n, n > 0)
       message: every image is signed by this repository's publish workflow on main
     - expression: >-
-        images.containers.map(image, verifyAttestationSignatures(image, attestations.provenance, [attestors.publisher])).all(n, n > 0) &&
-        images.containers.map(image, extractPayload(image, attestations.provenance).predicate.buildDefinition.resolvedDependencies
+        (images.containers + images.initContainers + images.ephemeralContainers + images.volumes).map(image, verifyAttestationSignatures(image, attestations.provenance, [attestors.publisher])).all(n, n > 0) &&
+        (images.containers + images.initContainers + images.ephemeralContainers + images.volumes).map(image, extractPayload(image, attestations.provenance).predicate.buildDefinition.resolvedDependencies
           .exists(d, d.uri.startsWith('git+https://github.com/heyvaldemar/kubernetes-supply-chain-admission@'))).all(ok, ok)
       message: every image carries signed provenance that says it was built from this repository
     - expression: >-
-        images.containers.map(image, verifyAttestationSignatures(image, attestations.sbom, [attestors.publisher])).all(n, n > 0) &&
-        images.containers.map(image, extractPayload(image, attestations.sbom).predicate.bomFormat == 'CycloneDX').all(ok, ok)
+        (images.containers + images.initContainers + images.ephemeralContainers + images.volumes).map(image, verifyAttestationSignatures(image, attestations.sbom, [attestors.publisher])).all(n, n > 0) &&
+        (images.containers + images.initContainers + images.ephemeralContainers + images.volumes).map(image, extractPayload(image, attestations.sbom).predicate.bomFormat == 'CycloneDX').all(ok, ok)
       message: every image carries a signed CycloneDX SBOM
     - expression: >-
-        images.containers.map(image, verifyAttestationSignatures(image, attestations.scan, [attestors.publisher])).all(n, n > 0) &&
-        images.containers.map(image, extractPayload(image, attestations.scan).predicate.scanner.result).all(r,
+        (images.containers + images.initContainers + images.ephemeralContainers + images.volumes).map(image, verifyAttestationSignatures(image, attestations.scan, [attestors.publisher])).all(n, n > 0) &&
+        (images.containers + images.initContainers + images.ephemeralContainers + images.volumes).map(image, extractPayload(image, attestations.scan).predicate.scanner.result).all(r,
           has(r.Results) && r.Results.exists(t, t.Class == 'os-pkgs') &&
           r.Results.all(t, !has(t.Vulnerabilities) || t.Vulnerabilities.all(v, v.Severity != 'CRITICAL')))
       message: every image carries a signed scan that read its operating system's packages and found nothing critical

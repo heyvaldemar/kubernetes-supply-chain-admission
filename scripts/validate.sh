@@ -62,6 +62,26 @@ text = " ".join(v["expression"] for v in spec.get("validations", []))
 for name in ("attestors.publisher", "attestations.provenance", "attestations.sbom", "attestations.scan"):
     if name not in text:
         bad.append(f"no validation uses {name}")
+# Every image a pod uses (ADR 6): each validation reads containers, init
+# containers, ephemeral containers and image volumes, Kyverno extracts the
+# volumes, and the policy sees kubectl debug's subresource.
+for v in spec.get("validations", []):
+    for key in ("images.containers", "images.initContainers", "images.ephemeralContainers", "images.volumes"):
+        if key not in v["expression"]:
+            bad.append(f"a validation does not read {key}: {v.get('message', '')}")
+if not any(i.get("name") == "volumes" and "v.image.reference" in i.get("expression", "") for i in spec.get("images", [])):
+    bad.append("no image extractor for image volumes: Kyverno 1.19 extracts none by itself")
+def resources(doc):
+    return {r for rule in doc.get("spec", {}).get("matchConstraints", {}).get("resourceRules", []) for r in rule.get("resources", [])}
+if "pods/ephemeralcontainers" not in resources(p):
+    bad.append("the image policy never sees kubectl debug: pods/ephemeralcontainers is not matched")
+allow = next(d for d in yaml.safe_load_all(open("policies/registry-allowlist.yaml")) if d and d.get("kind") == "ValidatingAdmissionPolicy")
+atext = " ".join(v.get("expression", "") for v in allow["spec"].get("variables", []))
+for part in ("initContainers", "ephemeralContainers", "v.image.reference"):
+    if part not in atext:
+        bad.append(f"the registry allowlist does not read {part}")
+if "pods/ephemeralcontainers" not in resources(allow):
+    bad.append("the registry allowlist never sees kubectl debug: pods/ephemeralcontainers is not matched")
 # The guard (ADR 5): with Kyverno's webhook for verify-images missing, as
 # Kyverno leaves it when it is scaled to zero, nothing is admitted.
 guard = list(yaml.safe_load_all(open("policies/kyverno-guard.yaml")))
@@ -71,6 +91,8 @@ hook = "ivpol.validate.kyverno.svc-fail-finegrained-%s" % p["metadata"]["name"]
 gtext = " ".join(v.get("expression", "") for v in vap.get("spec", {}).get("validations", []))
 if vap.get("spec", {}).get("failurePolicy") != "Fail" or hook not in gtext or "'Fail'" not in gtext:
     bad.append("the guard does not require Kyverno's webhook %s, failing closed" % hook)
+if "pods/ephemeralcontainers" not in resources(vap):
+    bad.append("the guard lets kubectl debug add a container while Kyverno is away: pods/ephemeralcontainers is not matched")
 ref = bnd.get("spec", {}).get("paramRef", {})
 if ref.get("name") != "kyverno-resource-validating-webhook-cfg" or ref.get("parameterNotFoundAction") != "Deny":
     bad.append("the guard admits when Kyverno's webhook configuration is gone")

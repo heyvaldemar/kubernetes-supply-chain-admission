@@ -7,3 +7,4 @@
 | 3 | [Provenance, an SBOM, and a scan that read something](0003-provenance-sbom-and-a-scan-that-read-something.md) | accepted |
 | 4 | [A native floor under the webhook](0004-a-native-floor-under-the-webhook.md) | accepted, its gap closed by 5 |
 | 5 | [No image runs while Kyverno is away](0005-no-image-while-kyverno-is-away.md) | accepted |
+| 6 | [Every image a pod uses, not only its containers](0006-every-image-a-pod-uses.md) | accepted |
