@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-22
+
 ### Security
 
 - Every image a pod uses is verified, not only its containers (ADR 6). Kyverno 1.19.1 extracts no image volume (kyverno/kyverno#17555 would have; closed unmerged 2026-10-22), the image policy's validations read `images.containers` alone, the registry allowlist read containers and init containers, and every rule matched `pods`, which `kubectl debug` never writes to. Before the fix, on its branch (run 39888131990), beside the signed image in a verified namespace: an image nobody signed and one from another registry, each mounted as a volume, admitted; ephemeral containers with either admitted, and one with Kyverno at zero; an init container nobody signed refused only by Kyverno's `required` check, with its provenance, SBOM and scan never read. The image policy now extracts image volumes and reads containers, init containers, ephemeral containers and volumes in every validation; the allowlist reads the same four; the policy, the allowlist and the guard match `pods/ephemeralcontainers` beside `pods`. Three plants and an e2e step 7 (an ephemeral container beside the signed one admitted), a Kyverno-down ephemeral case in step 6, and six static plants (12 in all).
@@ -46,5 +48,6 @@ All notable changes to this project are documented here. The format follows [Kee
 - The kind e2e suite, including what is admitted with Kyverno at zero, and the static checks, each shown its planted violation.
 - A threat model with three findings from the build, and four decision records.
 
-[Unreleased]: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/releases/tag/v1.0.0

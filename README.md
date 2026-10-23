@@ -37,20 +37,30 @@ Every line is a check in `tests/e2e/run.sh` on a fresh cluster, or in `scripts/v
 
 ## What the run reports
 
-From [run 39640932044](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/39640932044), against the images published that day:
+From [run 39889226821](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/39889226821), against the images published that day:
 
 ```text
 PASS  by-tag: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest)
+PASS  init-unsigned: refused (every image is signed by this repository's publish workflow on main)
+PASS  no-provenance: refused (every image carries signed provenance that says it was built from this repository)
+PASS  no-sbom: refused (every image carries a signed CycloneDX SBOM)
+PASS  no-scan: refused (every image carries a signed scan that read its operating system's packages and found nothing critical)
 PASS  other-signer: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/)
 PASS  signed: admitted and running
 PASS  unsigned: refused (every image is signed by this repository's publish workflow on main)
+PASS  volume-elsewhere: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest)
+PASS  volume-unsigned: refused (every image is signed by this repository's publish workflow on main)
 PASS  vulnerable: refused (a signed scan that read its operating system's packages and found nothing critical)
 PASS  another signer, Kyverno alone: refused (every image is signed by this repository's publish workflow on main)
 NOTE  Kyverno removed its webhook configuration as it went down: only the API server's guard is left to refuse
 PASS  with Kyverno at zero, the unsigned image from this registry: refused (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)
 PASS  with Kyverno at zero, the signed image too, an outage and not a hole: refused (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)
 PASS  with Kyverno at zero, an image from another registry: refused (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)
+PASS  with Kyverno at zero, an ephemeral container is refused too, the signed image included (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)
 PASS  with Kyverno back, the unsigned image is refused again
+PASS  control: an ephemeral container with the signed image is admitted
+PASS  an ephemeral container unsigned: refused (every image is signed by this repository's publish workflow on main)
+PASS  an ephemeral container from another registry: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest)
 ```
 
 Anyone can check the same images without a cluster; `scripts/verify-published.sh` runs these checks, and the three attestation types, in every e2e run:
