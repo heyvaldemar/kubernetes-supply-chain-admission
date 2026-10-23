@@ -13,10 +13,11 @@
 #      image nobody signed mounted as a volume, and a volume from another
 #      registry, each refused: every image a pod uses meets the same bar
 #   5. the image signed by someone else, refused by Kyverno alone too
-#   6. with Kyverno's admission controller at zero, the unsigned image from
-#      this registry is admitted (the gap docs/threat-model.md names) and an
-#      image from anywhere else is still refused; with Kyverno back, the
-#      unsigned image is refused again
+#   6. with Kyverno's admission controller at zero, the unsigned image, the
+#      signed image and one from another registry are each refused (ADR 5's
+#      guard: an outage, not a hole), and so is an ephemeral container added
+#      to the running pod; with Kyverno back, the unsigned image is refused
+#      for its signature again
 #   7. an ephemeral container added to the running signed pod, the way
 #      `kubectl debug` adds one, through the pod's ephemeralcontainers
 #      subresource: the signed image admitted (the control), one nobody
@@ -78,6 +79,19 @@ EOF
 }
 try() {  # try <name> <image>: the API server's answer to a server-side dry run
   pod "$1" "$2" | kubectl apply --dry-run=server -f - 2>&1
+}
+# What `kubectl debug` sends: the running pod with one more ephemeral
+# container, to its ephemeralcontainers subresource, as a dry run. A policy
+# that matches pods alone never sees this request.
+ephemeral() {  # ephemeral <image>: the API server's answer
+  kubectl -n workloads get pod signed -o json | python3 -c '
+import json, sys
+pod = json.load(sys.stdin)
+pod["spec"].setdefault("ephemeralContainers", []).append({
+    "name": "debug", "image": sys.argv[1], "command": ["sleep", "60"],
+    "securityContext": {"allowPrivilegeEscalation": False, "readOnlyRootFilesystem": True,
+                        "runAsNonRoot": True, "capabilities": {"drop": ["ALL"]}}})
+print(json.dumps(pod))' "$1" | kubectl replace --raw "/api/v1/namespaces/workloads/pods/signed/ephemeralcontainers?dryRun=All" -f - 2>&1
 }
 # apply_once_more <label> <outfile> <kubectl apply args...>
 # A webhook that times out has made no decision: the API server refuses the
@@ -167,6 +181,8 @@ down() {  # down <label> <name> <image>: refused, for whatever reason the API se
 down "with Kyverno at zero, the unsigned image from this registry" unsigned "$UNSIGNED"
 down "with Kyverno at zero, the signed image too, an outage and not a hole" app "$APP"
 down "with Kyverno at zero, an image from another registry" other "$OTHER"
+if out="$(ephemeral "$APP")"; then fail "with Kyverno at zero, an ephemeral container with the signed image: admitted"
+else pass "with Kyverno at zero, an ephemeral container is refused too, the signed image included ($(sed -E 's/.*denied request: //' <<<"$out" | head -1 | cut -c1-120))"; fi
 kubectl -n kyverno scale deployment kyverno-admission-controller --replicas=1 >/dev/null
 kubectl -n kyverno rollout status deployment/kyverno-admission-controller --timeout=300s >/dev/null
 back=""
@@ -180,19 +196,6 @@ grep -q "publish workflow on main" <<<"$back" && pass "with Kyverno back, the un
 
 # --- 7 -----------------------------------------------------------------------
 step "7. an ephemeral container in the running signed pod"
-# What `kubectl debug` sends: the running pod with one more ephemeral
-# container, to its ephemeralcontainers subresource, as a dry run. A policy
-# that matches pods alone never sees this request.
-ephemeral() {  # ephemeral <image>: the API server's answer
-  kubectl -n workloads get pod signed -o json | python3 -c '
-import json, sys
-pod = json.load(sys.stdin)
-pod["spec"].setdefault("ephemeralContainers", []).append({
-    "name": "debug", "image": sys.argv[1], "command": ["sleep", "60"],
-    "securityContext": {"allowPrivilegeEscalation": False, "readOnlyRootFilesystem": True,
-                        "runAsNonRoot": True, "capabilities": {"drop": ["ALL"]}}})
-print(json.dumps(pod))' "$1" | kubectl replace --raw "/api/v1/namespaces/workloads/pods/signed/ephemeralcontainers?dryRun=All" -f - 2>&1
-}
 if out="$(ephemeral "$APP")"; then pass "control: an ephemeral container with the signed image is admitted"
 else fail "control: an ephemeral container with the signed image was refused, so the refusals below prove nothing: ${out:0:300}"; fi
 for case in "unsigned|$UNSIGNED|every image is signed by this repository's publish workflow on main" \
