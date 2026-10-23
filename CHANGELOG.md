@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- Kyverno 1.19.2 (chart 3.9.2, from 1.19.1 and 3.9.1), every image it runs pinned by digest in `kyverno/images.yaml`. Its release names webhooks for namespaced image policies apart from cluster ones (kyverno/kyverno#17617) and verifies at admission instead of trusting what an earlier stage recorded (#17994).
+
 ## [1.1.0] - 2026-10-22
 
 ### Security
