@@ -1,0 +1,106 @@
+{
+  "repository": "heyvaldemar/kubernetes-supply-chain-admission",
+  "workflow": "e2e.yml",
+  "written_at": "2026-10-24T12:12:32Z",
+  "window_days": 30,
+  "days_with_runs": 12,
+  "green_days": 11,
+  "streak_days": 9,
+  "runs": 48,
+  "runs_passed": 41,
+  "latest": {
+    "conclusion": "success",
+    "at": "2026-10-24T09:07:58Z",
+    "url": "https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/40080740532",
+    "commit": "c828e8a",
+    "checks_passed": 20,
+    "checks_failed": 0,
+    "checks": [
+      {
+        "state": "PASS",
+        "name": "by-tag: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest)"
+      },
+      {
+        "state": "PASS",
+        "name": "init-unsigned: refused (every image is signed by this repository's publish workflow on main)"
+      },
+      {
+        "state": "PASS",
+        "name": "no-provenance: refused (every image carries signed provenance that says it was built from this repository)"
+      },
+      {
+        "state": "PASS",
+        "name": "no-sbom: refused (every image carries a signed CycloneDX SBOM)"
+      },
+      {
+        "state": "PASS",
+        "name": "no-scan: refused (every image carries a signed scan that read its operating system's packages and found nothing critical)"
+      },
+      {
+        "state": "PASS",
+        "name": "other-signer: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/)"
+      },
+      {
+        "state": "PASS",
+        "name": "signed: admitted and running"
+      },
+      {
+        "state": "PASS",
+        "name": "unsigned: refused (every image is signed by this repository's publish workflow on main)"
+      },
+      {
+        "state": "PASS",
+        "name": "volume-elsewhere: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest)"
+      },
+      {
+        "state": "PASS",
+        "name": "volume-unsigned: refused (every image is signed by this repository's publish workflow on main)"
+      },
+      {
+        "state": "PASS",
+        "name": "vulnerable: refused (a signed scan that read its operating system's packages and found nothing critical)"
+      },
+      {
+        "state": "PASS",
+        "name": "another signer, Kyverno alone: refused (every image is signed by this repository's publish workflow on main)"
+      },
+      {
+        "state": "NOTE",
+        "name": "Kyverno removed its webhook configuration as it went down: only the API server's guard is left to refuse"
+      },
+      {
+        "state": "PASS",
+        "name": "with Kyverno at zero, the unsigned image from this registry: refused (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)"
+      },
+      {
+        "state": "PASS",
+        "name": "with Kyverno at zero, the signed image too, an outage and not a hole: refused (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)"
+      },
+      {
+        "state": "PASS",
+        "name": "with Kyverno at zero, an image from another registry: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest)"
+      },
+      {
+        "state": "PASS",
+        "name": "with Kyverno at zero, an ephemeral container is refused too, the signed image included (failed to configure binding: no params found for policy binding with `Deny` parameterNotFoundAction)"
+      },
+      {
+        "state": "PASS",
+        "name": "with Kyverno back, the unsigned image is refused again"
+      },
+      {
+        "state": "PASS",
+        "name": "control: an ephemeral container with the signed image is admitted"
+      },
+      {
+        "state": "PASS",
+        "name": "an ephemeral container unsigned: refused (every image is signed by this repository's publish workflow on main)"
+      },
+      {
+        "state": "PASS",
+        "name": "an ephemeral container from another registry: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest)"
+      }
+    ],
+    "measured": []
+  }
+}
