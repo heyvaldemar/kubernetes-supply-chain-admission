@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- The images' provenance is called Build L1, not L2, in `publish.yml`, the README, the threat model and a dated section of ADR 3. SLSA v1.0 asks at L2 that the build platform generate the provenance, with only the outputs' names and digests left to the build; here a step of the publish job writes every field and signs it. What admission checks is unchanged: the signer is still the publish workflow on main, and the source repository the policy reads is still the build job's word.
+
 ## [1.1.1] - 2026-10-27
 
 ### Changed

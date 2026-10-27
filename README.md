@@ -113,7 +113,7 @@ Nothing in a cloud. The cluster is kind on one machine; the images live in GitHu
 
 ## What it does not do
 
-The [threat model](docs/threat-model.md) lists every threat with its control and check, five findings from the build, and what is not covered: a scan is only as fresh as the last publish run; the provenance is Build L2, written by the job that builds; a running pod is not re-checked when its image's scan turns critical; the registry is on the admission path.
+The [threat model](docs/threat-model.md) lists every threat with its control and check, five findings from the build, and what is not covered: a scan is only as fresh as the last publish run; the provenance is written by the job that builds, which makes it Build L1 by SLSA v1.0's text; a running pod is not re-checked when its image's scan turns critical; the registry is on the admission path.
 
 The [Cyber Resilience Act mapping](docs/cyber-resilience-act.md) takes each control to the clause of Regulation (EU) 2024/2847 it produces evidence for, Article 13(5)'s due diligence on third-party components first, and says what each leaves out: the 24-hour reporting that applies since 11 September 2026, the support period and the conformity assessment are processes, and no pipeline carries them.
 

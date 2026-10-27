@@ -112,7 +112,9 @@ jobs:
 
             # Where it came from: this repository at this commit, built by
             # this workflow run. SLSA v1 provenance, generated and signed in
-            # the build job itself (Build L2; an isolated generator would be L3).
+            # the build job itself. By SLSA v1.0's text that is Build L1: L2
+            # asks for provenance the build platform generates, not a step of
+            # the build (ADR 3, 2026-10-27).
             if [ "$name" != no-provenance ]; then
             python3 - "$out/provenance.json" <<'PY'
           import json, os, sys
