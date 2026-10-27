@@ -32,3 +32,7 @@ The scan is re-run and re-attested daily on a schedule.
 ## How to explain this to a customer
 
 Each piece of software comes with a signed record of where it was built, a list of what is inside it, and a security scan from within the last day. Anything with a known critical weakness is stopped before it starts, even if our own pipeline built it.
+
+## 2026-10-27: asked of Trivy
+
+The check this record adds was asked of Trivy itself, in [aquasecurity/trivy Discussion #11403](https://github.com/aquasecurity/trivy/discussions/11403) on 2026-10-13: a warning when no operating system is detected, an option to fail when nothing was scanned, or a field in the report that says whether OS packages were read. A maintainer answered on 2026-10-27 that Trivy does not plan any of them. An image with no detected OS is expected for many targets, a `scratch` image with one binary among them, so a warning would rest on heuristics that miss some cases or warn on others. The answer named checking for `Metadata.OS` and a result of class `os-pkgs`, the second of which `policies/verify-images.yaml` requires, as the most reliable way to know the OS packages were scanned; Trivy's own trace of the miss is the line `OS is not detected.`, under `--debug` only. So the requirement stays in the policy: no signal from the scanner will replace it.
