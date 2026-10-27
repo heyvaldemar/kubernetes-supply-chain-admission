@@ -37,7 +37,7 @@ Every line is a check in `tests/e2e/run.sh` on a fresh cluster, or in `scripts/v
 
 ## What the run reports
 
-From [run 39889226821](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/39889226821), against the images published that day:
+From [run 40524098810](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/40524098810), against the images published that day:
 
 ```text
 PASS  by-tag: refused (images come from ghcr.io/heyvaldemar/kubernetes-supply-chain-admission/, by digest)

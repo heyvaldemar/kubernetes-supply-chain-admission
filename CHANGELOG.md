@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-27
+
 ### Changed
 
 - ADR 3 records Trivy's answer to the gap it closes (aquasecurity/trivy Discussion #11403, 2026-10-27): no warning, option or field is planned for an image whose OS was not detected, and the maintainer named a result of class `os-pkgs`, which the policy requires, as the most reliable check.
@@ -54,6 +56,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - The kind e2e suite, including what is admitted with Kyverno at zero, and the static checks, each shown its planted violation.
 - A threat model with three findings from the build, and four decision records.
 
-[Unreleased]: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/heyvaldemar/kubernetes-supply-chain-admission/releases/tag/v1.0.0
