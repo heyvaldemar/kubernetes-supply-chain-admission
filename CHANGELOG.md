@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - The images' provenance is called Build L1, not L2, in `publish.yml`, the README, the threat model and a dated section of ADR 3. SLSA v1.0 asks at L2 that the build platform generate the provenance, with only the outputs' names and digests left to the build; here a step of the publish job writes every field and signs it. What admission checks is unchanged: the signer is still the publish workflow on main, and the source repository the policy reads is still the build job's word.
 
+### Security
+
+- `scripts/referrers.py` reads an image reference by the OCI distribution spec's grammar instead of checking that it starts with `ghcr.io/`. The repository name goes into the registry URL and the token's scope as it is, and the prefix check let `ghcr.io/../x:tag` and `ghcr.io/x?y=1:tag` through. The selftest now refuses both, with a short digest and a reference that has neither tag nor digest. Found by CodeQL (`py/incomplete-url-substring-sanitization`). The script's inputs come from this repository's own workflows, so no run was exposed.
+
 ## [1.1.1] - 2026-10-27
 
 ### Changed

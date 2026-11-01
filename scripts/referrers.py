@@ -28,6 +28,7 @@ environment; check reads anonymously.
 import base64
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -36,6 +37,14 @@ import urllib.request
 BUNDLE = "application/vnd.dev.sigstore.bundle.v0.3+json"
 INDEX = "application/vnd.oci.image.index.v1+json"
 MANIFEST = "application/vnd.oci.image.manifest.v1+json"
+
+# An image reference, read by the grammar of the OCI distribution spec. The
+# repository goes into the registry's URL and the token's scope as it is, so
+# it must be a repository name and nothing else. The prefix check this
+# replaces let "ghcr.io/../x:tag" through, and "ghcr.io/x?y=1:tag", which put
+# a query into the registry URL.
+REPO = r"[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*)*"
+REF = re.compile(r"ghcr\.io/(?P<repo>%s)(?::(?P<tag>[A-Za-z0-9_][A-Za-z0-9._-]{0,127}))?(?:@(?P<digest>sha256:[0-9a-f]{64}))?" % REPO)
 
 
 def kind_of(annotations):
@@ -104,14 +113,22 @@ class Registry:
             pass
 
 
+def parse(image):
+    """ghcr.io/<repository>[:<tag>][@sha256:<digest>] -> (repository, tag, digest), or None.
+
+    A digest wins over a tag; one of the two is required."""
+    m = REF.fullmatch(image)
+    if not m or not (m["tag"] or m["digest"]):
+        return None
+    return m["repo"], (None if m["digest"] else m["tag"]), m["digest"] or ""
+
+
 def read(image, push):
-    name, _, digest = image.partition("@")
-    tag = None
-    if not digest and ":" in name.rsplit("/", 1)[-1]:
-        name, tag = name.rsplit(":", 1)
-    if not name.startswith("ghcr.io/") or not (digest.startswith("sha256:") or tag):
+    ref = parse(image)
+    if ref is None:
         sys.exit("expected ghcr.io/<repository>@sha256:<digest> or :<tag>, got %s" % image)
-    reg = Registry(name[len("ghcr.io/"):], push)
+    repo, tag, digest = ref
+    reg = Registry(repo, push)
     if tag:
         digest = reg.digest(tag)
     tag = "sha256-" + digest[len("sha256:"):]
@@ -193,6 +210,14 @@ def selftest():
         ("on equal timestamps the later entry is kept", keep[-1] == entries[-1] and entries[4] in drop),
         ("everything else is dropped", len(drop) == len(entries) - len(keep) == 4),
         ("one of each drops nothing", select(keep) == (keep, [])),
+        ("a digest reference is read", parse("ghcr.io/o/r/app@sha256:" + "a" * 64) == ("o/r/app", None, "sha256:" + "a" * 64)),
+        ("a tag reference is read", parse("ghcr.io/o/app:latest") == ("o/app", "latest", "")),
+        ("with a tag and a digest, the digest is read", parse("ghcr.io/o/app:v1@sha256:" + "b" * 64) == ("o/app", None, "sha256:" + "b" * 64)),
+        ("a host that only contains ghcr.io/ is refused", parse("evil.example/ghcr.io/o/app:latest") is None),
+        ("a repository that climbs out of its path is refused", parse("ghcr.io/../o/app:latest") is None),
+        ("a repository with a query in it is refused", parse("ghcr.io/o/app?x=1:latest") is None),
+        ("a short digest is refused", parse("ghcr.io/o/app@sha256:abc") is None),
+        ("neither a tag nor a digest is refused", parse("ghcr.io/o/app") is None),
     ]
     for name, passed in cases:
         print("  %s  %s" % ("ok  " if passed else "FAIL", name))
