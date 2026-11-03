@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- The threat model says Kyverno merged the note on the in-toto payload, [kyverno/website#2201](https://github.com/kyverno/website/pull/2201), on 2026-11-03. It had said the note was proposed.
 - kubectl 1.37.2 (from 1.37.1) in `tools.lock`, both platforms at the checksums dl.k8s.io publishes. The scheduled freshness check failed on 2026-11-02 for this one pin (run 41456050362).
 
 ### Fixed
