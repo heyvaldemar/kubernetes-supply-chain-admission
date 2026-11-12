@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- Kyverno 1.20.0, chart 3.10.0, from 1.19.2 and chart 3.9.2, every image it runs by digest. Each threat-model finding that named 1.19 was checked against it, as AGENTS.md asks. One changed: with two attestations of one predicate type, 1.20.0 keeps the newest by verified timestamp and refuses when it cannot tell ([kyverno/kyverno#18049](https://github.com/kyverno/kyverno/pull/18049)), where 1.19 kept the one the referrers index listed last. `scripts/referrers.py` still keeps one bundle of each kind, for the cost. The others hold and now name 1.20.0. Two corrections came out of the same reading: since 1.19.2 a verification call reads the bundles once, not twice, and cosign v3.1.3 verifies a bundle without the Rekor client a `ctlog` block makes Kyverno build.
 - The threat model says Kyverno merged the note on the in-toto payload, [kyverno/website#2201](https://github.com/kyverno/website/pull/2201), on 2026-11-03. It had said the note was proposed.
 - Alpine 3.22.8 (from 3.22.7), the base of the `app`, `unsigned` and `partial` images, at the digest the 3.22 tag points to on 2026-11-09 (`49340b34`, from `2e0b81d6`), in every copy: the three Dockerfiles, the static plant and the reproduction's workflow. The freshness check named it (run 42534093795).
 - kubectl 1.37.2 (from 1.37.1) in `tools.lock`, both platforms at the checksums dl.k8s.io publishes. The scheduled freshness check failed on 2026-11-02 for this one pin (run 41456050362).

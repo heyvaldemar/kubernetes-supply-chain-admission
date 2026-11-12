@@ -70,7 +70,7 @@ for v in spec.get("validations", []):
         if key not in v["expression"]:
             bad.append(f"a validation does not read {key}: {v.get('message', '')}")
 if not any(i.get("name") == "volumes" and "v.image.reference" in i.get("expression", "") for i in spec.get("images", [])):
-    bad.append("no image extractor for image volumes: Kyverno 1.19 extracts none by itself")
+    bad.append("no image extractor for image volumes: Kyverno, 1.19.1 to 1.20.0, extracts none by itself")
 def resources(doc):
     return {r for rule in doc.get("spec", {}).get("matchConstraints", {}).get("resourceRules", []) for r in rule.get("resources", [])}
 if "pods/ephemeralcontainers" not in resources(p):

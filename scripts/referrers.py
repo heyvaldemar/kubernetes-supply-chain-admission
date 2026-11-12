@@ -9,14 +9,16 @@ cosign attaches every signature and attestation to the image as an OCI
 referrer. GHCR has no referrers API, so cosign keeps them in an index under
 the fallback tag sha256-<digest> and appends to it on every run. The images
 here build reproducibly, so the daily publish run attaches four more bundles
-to the same digest, and Kyverno 1.19 verifies every bundle on the image, once
+to the same digest, and Kyverno, 1.19.1 to 1.20.0, verifies every bundle on
+the image, once
 for each attestation the policy declares, on every admission. The work
 grows by four bundles a day, with no limit.
 
-It also decides which scan the policy reads. With several attestations of
-one type, Kyverno keeps the last it verified (AddVerifiedIntotoPayloads
-writes a map keyed by predicate type), and GHCR's index is not in the order
-the bundles were made.
+On Kyverno 1.19 it also decided which scan the policy read. With several
+attestations of one type, 1.19 kept the last it verified
+(AddVerifiedIntotoPayloads writes a map keyed by predicate type), and GHCR's
+index is not in the order the bundles were made. 1.20.0 keeps the newest by
+verified timestamp (kyverno/kyverno#18049); prune still bounds the work.
 
 prune keeps the newest bundle of each kind by its
 org.opencontainers.image.created annotation, later in the index on a tie,
