@@ -34,7 +34,7 @@ A Kyverno upgrade is a risky change. The threat model's findings that name Kyver
 
 ## Pins
 
-Each pin has a home, and `scripts/check-freshness.py` compares them all with upstream on Verify's weekly schedule. It reports and changes nothing.
+Each pin has a home, and `scripts/check-freshness.py` compares them all with upstream on Verify's weekly schedule. It reports and changes nothing. A release younger than three days is not pinned here: a pin moved by hand waits until its release is three days old, and so do Dependabot's version updates (its default cooldown since 14 July 2026, which fleet conformance does not let `.github/dependabot.yml` shorten); its security updates open at once. Three days is long enough for a compromised release to be noticed and pulled. The freshness check, which reads what `freshness.json` lists, warns on a younger release and names the moment it becomes a failure.
 
 - Base images by digest in `images/*/Dockerfile`.
 - Kyverno's chart by version in `scripts/install-kyverno.sh` (`CHART_VERSION`), every image it runs by digest in `kyverno/images.yaml`.
