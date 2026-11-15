@@ -2,7 +2,10 @@
 # run.sh IMAGE@DIGEST - one image, the same two signed attestations of one
 # type, two orders of the registry's referrers index, and Kyverno's answer to
 # each. Reproduced when the answers differ: the policy reads whichever
-# attestation the index lists last, not the newer one.
+# attestation the index lists last, not the newer one. Fixed when both orders
+# are admitted. EXPECT says which of the two is a pass: reproduced (Kyverno
+# 1.19) or fixed (1.20.0 and later, kyverno/kyverno#18049); the run fails
+# on the other, and on any other answer.
 #
 # Needs a cluster with Kyverno (scripts/install-kyverno.sh), kubectl, python3,
 # GITHUB_REPOSITORY (owner/name, whose workflow signed the attestations), and
@@ -11,6 +14,8 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 image="${1:?usage: run.sh IMAGE@DIGEST}"
 repo="${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY to owner/name}"
+expect="${EXPECT:-reproduced}"
+case "$expect" in reproduced|fixed) ;; *) echo "EXPECT must be reproduced or fixed, not $expect" >&2; exit 2 ;; esac
 
 sed -e "s#REPOSITORY_LC#${repo,,}#g" -e "s#REPOSITORY#$repo#g" "$HERE/policy.yaml" | kubectl apply -f - >/dev/null
 kubectl create namespace attestation-order --dry-run=client -o yaml \
@@ -49,7 +54,15 @@ echo
 if [ "${got[newest-last]}" = admitted ] && [[ "${got[newest-first]}" == refused:* ]]; then
   echo "REPRODUCED: the same two signed attestations, in two index orders, got two answers."
   echo "With the newer one listed last the pod is admitted; listed first, extractPayload() returns the older one."
-  exit 0
+  [ "$expect" = reproduced ] && exit 0
+  echo "Expected fixed: both orders admitted." >&2
+  exit 1
 fi
-echo "NOT REPRODUCED: newest-last ${got[newest-last]}; newest-first ${got[newest-first]}"
+if [ "${got[newest-last]}" = admitted ] && [ "${got[newest-first]}" = admitted ]; then
+  echo "FIXED: the same two signed attestations, in either index order, got the same answer: admitted."
+  [ "$expect" = fixed ] && exit 0
+  echo "Expected reproduced: two answers." >&2
+  exit 1
+fi
+echo "NEITHER: newest-last ${got[newest-last]}; newest-first ${got[newest-first]}"
 exit 1

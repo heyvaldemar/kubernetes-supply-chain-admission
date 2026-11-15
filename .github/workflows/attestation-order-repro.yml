@@ -5,13 +5,22 @@ name: Kyverno attestation order (reproduction)
 # image, attests it twice with the same predicate type ("first", then
 # "second"), and asks the Kyverno scripts/install-kyverno.sh pins under two
 # orders of the registry's referrers index. The policy admits only when extractPayload() returns the
-# newer attestation. repro/attestation-order/README.md says what it shows.
+# newer attestation. `expect` says which result is a pass: fixed (both orders
+# admitted, Kyverno 1.20.0 and later) or reproduced (two answers, 1.19).
+# repro/attestation-order/README.md says what it shows.
 #
 # Started by hand, on main only: the attestations are signed keylessly with
 # this workflow's identity on main, which is the identity the policy names.
 # A fork runs it under its own identity.
 on:
   workflow_dispatch:
+    inputs:
+      expect:
+        description: "fixed: both index orders admitted (Kyverno 1.20.0 and later); reproduced: two answers (1.19)"
+        required: true
+        type: choice
+        options: ["fixed", "reproduced"]
+        default: "fixed"
 
 permissions:
   contents: read
@@ -22,7 +31,7 @@ concurrency:
 
 jobs:
   repro:
-    name: Same attestations, two index orders, two answers
+    name: Same attestations, two index orders
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -86,12 +95,13 @@ jobs:
         env:
           REGISTRY_USER: ${{ github.actor }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPECT: ${{ inputs.expect }}
         run: |
           set -o pipefail
           {
             echo "### Kyverno attestation order"
             echo
-            echo "Image: \`$REF\`"
+            echo "Image: \`$REF\`, expected: $EXPECT"
             echo
             echo '```'
             ./repro/attestation-order/run.sh "$REF"
