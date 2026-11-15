@@ -1,6 +1,6 @@
 # Kyverno attestation order (reproduction)
 
-A reproduction for Kyverno's `ImageValidatingPolicy`, the policy type this repository runs, of [kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000): when an image carries several attestations of one predicate type, `extractPayload()` returns whichever one the registry's referrers index lists last, not the newest.
+A reproduction for Kyverno's `ImageValidatingPolicy`, the policy type this repository runs, of [kyverno/kyverno#18000](https://github.com/kyverno/kyverno/issues/18000), reported for that policy type as [kyverno/kyverno#18023](https://github.com/kyverno/kyverno/issues/18023): when an image carries several attestations of one predicate type, `extractPayload()` returns whichever one the registry's referrers index lists last, not the newest.
 
 It is not one of this repository's checks. It runs when started by hand, in [`.github/workflows/attestation-order-repro.yml`](../../.github/workflows/attestation-order-repro.yml):
 
@@ -9,11 +9,11 @@ It is not one of this repository's checks. It runs when started by hand, in [`.g
 3. Put the two bundles in the index newest last, restart Kyverno's admission controller so nothing is cached, and ask the API server about a pod with the image (server-side dry run).
 4. Put them newest first, restart, ask again.
 
-Reproduced means the two answers differ: admitted with the newer bundle listed last, refused with it listed first. Nothing changes between the two questions except the order of the index. The image, its digest and both signed attestations stay the same.
+Reproduced means the two answers differ: admitted with the newer bundle listed last, refused with it listed first. Fixed means both are admitted. Nothing changes between the two questions except the order of the index. The image, its digest and both signed attestations stay the same. The workflow's `expect` input says which of the two is a pass, `fixed` by default since the pins moved to Kyverno 1.20.0; any other answer fails the run.
 
 Reproduced with Kyverno 1.19.1 ([38594942252](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/38594942252), 2026-10-14) and again with 1.19.2 ([39898566528](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/39898566528), 2026-10-23): admitted with the newer bundle listed last, refused with it listed first, `extractPayload()` returning the older one.
 
-Not reproduced with Kyverno 1.20.0 ([43699913448](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/43699913448), 2026-11-15): admitted with the newer bundle listed last and admitted with it listed first. 1.20.0 carries [kyverno/kyverno#18049](https://github.com/kyverno/kyverno/pull/18049), which keeps the newest attestation of a type by its verified timestamp (`selectNewestAttestation` in `pkg/image/verifiers/ivpol/cosign/timestamp.go`) and refuses the image when it cannot tell. The workflow still ends red when the two answers agree, so on 1.20.0 a red run is the expected result.
+Not reproduced with Kyverno 1.20.0 ([43699913448](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/43699913448), 2026-11-15): admitted with the newer bundle listed last and admitted with it listed first. 1.20.0 carries [kyverno/kyverno#18049](https://github.com/kyverno/kyverno/pull/18049), which keeps the newest attestation of a type by its verified timestamp (`selectNewestAttestation` in `pkg/image/verifiers/ivpol/cosign/timestamp.go`) and refuses the image when it cannot tell. That run predates the `expect` input and ended red, as the script then did whenever the answers agreed; [43704489655](https://github.com/heyvaldemar/kubernetes-supply-chain-admission/actions/runs/43704489655), with `expect: fixed`, is the same check ending green.
 
 Where it comes from in Kyverno 1.19.1: `VerifyAttestationSignature` in `pkg/image/verifiers/ivpol/cosign/verifier.go` calls `image.AddVerifiedIntotoPayloads(gotType, payload)` for every verified attestation of the requested type, and in kyverno/sdk (`extensions/imagedataloader/loader.go`) that is a map keyed by predicate type, so each one overwrites the one before. cosign v3.1.2 returns the bundles in index order.
 
