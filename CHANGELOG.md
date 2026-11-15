@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- `scripts/check-freshness.py` is the fleet's one copy of the freshness check, fleet-ops `templates/check-freshness.py`, and what this repository pins is listed in `freshness.json`. A release younger than three days is now a warning that names the moment it becomes a failure: the release-age rule keeps such a version off main anyway, and every upstream release used to turn the check red for three days nobody was allowed to act on. A release whose date cannot be read still fails, and so does a tag that moved to a new digest.
 - The threat model says Kyverno merged the note on the in-toto payload, [kyverno/website#2201](https://github.com/kyverno/website/pull/2201), on 2026-11-03. It had said the note was proposed.
 - Alpine 3.22.8 (from 3.22.7), the base of the `app`, `unsigned` and `partial` images, at the digest the 3.22 tag points to on 2026-11-09 (`49340b34`, from `2e0b81d6`), in every copy: the three Dockerfiles, the static plant and the reproduction's workflow. The freshness check named it (run 42534093795).
 - kubectl 1.37.2 (from 1.37.1) in `tools.lock`, both platforms at the checksums dl.k8s.io publishes. The scheduled freshness check failed on 2026-11-02 for this one pin (run 41456050362).
