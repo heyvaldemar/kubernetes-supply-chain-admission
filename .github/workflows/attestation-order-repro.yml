@@ -3,8 +3,8 @@ name: Kyverno attestation order (reproduction)
 # A reproduction for Kyverno's ImageValidatingPolicy path of
 # kyverno/kyverno#18000, not part of this repository's checks. It builds one
 # image, attests it twice with the same predicate type ("first", then
-# "second"), and asks Kyverno 1.19.1 under two orders of the registry's
-# referrers index. The policy admits only when extractPayload() returns the
+# "second"), and asks the Kyverno scripts/install-kyverno.sh pins under two
+# orders of the registry's referrers index. The policy admits only when extractPayload() returns the
 # newer attestation. repro/attestation-order/README.md says what it shows.
 #
 # Started by hand, on main only: the attestations are signed keylessly with
