@@ -19,6 +19,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Security
 
+- **A release is verified for its exact signer** (ada0057). `.github/workflows/release-assets.yml` checks the signature against this repository's `release-assets.yml` on the ref the run ran on; before, any workflow of the repository on any branch passed. A changed archive must now be refused in the tool's own words, so Sigstore out of reach or a missing tool fails the job instead of passing it. A run started by hand runs only from `main`.
 - `scripts/referrers.py` reads an image reference by the OCI distribution spec's grammar instead of checking that it starts with `ghcr.io/`. The repository name goes into the registry URL and the token's scope as it is, and the prefix check let `ghcr.io/../x:tag` and `ghcr.io/x?y=1:tag` through. The selftest now refuses both, with a short digest and a reference that has neither tag nor digest. Found by CodeQL (`py/incomplete-url-substring-sanitization`). The script's inputs come from this repository's own workflows, so no run was exposed.
 
 ## [1.1.1] - 2026-10-27
