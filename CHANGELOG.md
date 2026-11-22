@@ -15,6 +15,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Fixed
 
+- **The freshness check judges a Terraform provider against its newest stable release.** `scripts/check-freshness.py`, the fleet's one copy, took the registry's last published version, pre-releases included, so coder/coder 2.20.1-pre0 read as newer than a pin on 2.20.0. It now takes the newest stable version the registry lists.
 - The images' provenance is called Build L1, not L2, in `publish.yml`, the README, the threat model and a dated section of ADR 3. SLSA v1.0 asks at L2 that the build platform generate the provenance, with only the outputs' names and digests left to the build; here a step of the publish job writes every field and signs it. What admission checks is unchanged: the signer is still the publish workflow on main, and the source repository the policy reads is still the build job's word.
 
 ### Security
